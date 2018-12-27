@@ -24,6 +24,12 @@ dependencies:
 
 library:
   source-dirs: src
+  build-tools:
+  - alex >= 3.2 && < 3.3
+  dependencies:
+  - array >= 0.5 && < 0.6
+  - containers >= 0.6 && < 0.7
+  - scientific >= 0.3 && < 0.4
 
 executables:
   bblisp-exe:
