@@ -24,7 +24,7 @@ $specialsubsequent = [\!\$\%\&\*\+\-\.\/\:\<\=\>\?\@\^\_\~]
 $initial           = [$alpha $specialinitial]
 $subsequent        = [$alpha $digit $specialsubsequent]
 
-@symbol            = $initial$subsequent*
+@identifier        = $initial$subsequent*
 @integer           = $digit+
 @decimal           = $digit+.$digit+
 
@@ -40,7 +40,7 @@ state :-
 <comment> \n            { skip }
 <lisp>    \n            { skip }
 <lisp>    $whitespace+  ;
-<lisp>    @symbol       { mkSymbol }
+<lisp>    @identifier   { mkIdentifier }
 <lisp>    @decimal      { mkDecimal }
 <lisp>    @integer      { mkInteger }
 <lisp>    "}}"          { leaveLisp `andBegin` initial }
@@ -62,12 +62,12 @@ data LexemeClass
     = EOF
     | LPAREN
     | RPAREN
-    | TEXT    String
-    | SYMBOL  String
-    | STRING  String
-    | BOOLEAN Bool
-    | INTEGER Integer
-    | DECIMAL Scientific
+    | TEXT       String
+    | IDENTIFIER String
+    | STRING     String
+    | BOOLEAN    Bool
+    | INTEGER    Integer
+    | DECIMAL    Scientific
     deriving (Eq, Show)
 
 -- | Possible lexer states.
@@ -138,10 +138,10 @@ leaveLisp input len = do
     setLexerState SINITIAL
     skip input len
 
--- | Read and make symbol lexeme.
-mkSymbol :: Action
-mkSymbol (p, _, _, str) len =
-    return $ Lexeme p (SYMBOL str') $ Just str'
+-- | Read and make identifier lexeme.
+mkIdentifier :: Action
+mkIdentifier (p, _, _, str) len =
+    return $ Lexeme p (IDENTIFIER str') $ Just str'
   where
     str' = take len str
 
