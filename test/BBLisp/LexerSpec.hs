@@ -28,7 +28,7 @@ sampleTemplate1 :: String
 sampleTemplate1 = intercalate "\n"
     [ "Hello {{ name }}."
     , "{{! I am invisible }}"
-    , "The answer is {{ 42 }}."
+    , "The answer is {{ + (- 50 20) 12 }}."
     , "First 10 digits of {{ $pi }} is {{ 3.1415926535 }}."
     ]
 
@@ -38,7 +38,13 @@ expectedTokens1 =
     [ TEXT "Hello "
     , IDENTIFIER "name"
     , TEXT ".\n\nThe answer is "
-    , INTEGER 42
+    , IDENTIFIER "+"
+    , LPAREN
+    , IDENTIFIER "-"
+    , INTEGER 50
+    , INTEGER 20
+    , RPAREN
+    , INTEGER 12
     , TEXT ".\nFirst 10 digits of "
     , IDENTIFIER "$pi"
     , TEXT " is "
