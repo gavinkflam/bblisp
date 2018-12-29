@@ -35,20 +35,20 @@ sampleTemplate1 = intercalate "\n"
 -- | Expected tokens scanned from `sampleTemplate1`.
 expectedTokens1 :: [LexemeClass]
 expectedTokens1 =
-    [ TEXT "Hello "
-    , IDENTIFIER "name"
-    , TEXT ".\n\nThe answer is "
-    , IDENTIFIER "+"
-    , LPAREN
-    , IDENTIFIER "-"
-    , INTEGER 50
-    , INTEGER 20
-    , RPAREN
-    , INTEGER 12
-    , TEXT ".\nFirst 10 digits of "
-    , IDENTIFIER "$pi"
-    , TEXT " is "
-    , DECIMAL $ read "3.1415926535"
-    , TEXT "."
-    , EOF
+    [ LText "Hello "
+    , LIdentifier "name"
+    , LText ".\n\nThe answer is "
+    , LIdentifier "+"
+    , LLParen
+    , LIdentifier "-"
+    , LInteger 50
+    , LInteger 20
+    , LRParen
+    , LInteger 12
+    , LText ".\nFirst 10 digits of "
+    , LIdentifier "$pi"
+    , LText " is "
+    , LDecimal $ read "3.1415926535"
+    , LText "."
+    , LEOF
     ]

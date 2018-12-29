@@ -54,8 +54,8 @@ state :-
 <lisp>    @decimal      { mkDecimal }
 <lisp>    @integer      { mkInteger }
 <lisp>    "}}"          { leaveLisp `andBegin` template }
-<lisp>    "("           { mkL LPAREN }
-<lisp>    ")"           { mkL RPAREN }
+<lisp>    "("           { mkL LLParen }
+<lisp>    ")"           { mkL LRParen }
 
 {
 -- | Lexer user state function type.
@@ -69,23 +69,23 @@ data Lexeme = Lexeme AlexPosn LexemeClass (Maybe String)
 
 -- | Lexeme tokens.
 data LexemeClass
-    = EOF
-    | LPAREN
-    | RPAREN
-    | TEXT       String
-    | IDENTIFIER String
-    | STRING     String
-    | BOOLEAN    Bool
-    | INTEGER    Integer
-    | DECIMAL    Scientific
+    = LEOF
+    | LLParen
+    | LRParen
+    | LText       String
+    | LIdentifier String
+    | LString     String
+    | LBoolean    Bool
+    | LInteger    Integer
+    | LDecimal    Scientific
     deriving (Eq, Show)
 
 -- | Possible lexer states.
 data LexerState
-    = STEMPLATE
-    | SCOMMENT
-    | SLISP
-    | SSTRING
+    = STemplate
+    | SComment
+    | SLisp
+    | SString
     deriving (Eq, Show)
 
 -- | Lexer user state container lexer state information and position
@@ -109,11 +109,11 @@ template = 0
 -- | Initial lexer user state.
 alexInitUserState :: AlexUserState
 alexInitUserState = AlexUserState
-    { lexerState         = STEMPLATE
+    { lexerState         = STemplate
     , lexerTextValue     = ""
     , lexerLispValue     = []
     , parserCollIdent    = Map.empty
-    , parserCurrentToken = Lexeme undefined EOF Nothing
+    , parserCurrentToken = Lexeme undefined LEOF Nothing
     , parserPos          = Nothing
     }
 
@@ -150,19 +150,19 @@ clearLexerTextValue = Alex $ \s ->
 
 -- | Enter comment state.
 enterComment :: Action
-enterComment _ _ = setLexerState SCOMMENT >> alexMonadScan
+enterComment _ _ = setLexerState SComment >> alexMonadScan
 
 -- | Leave comment state.
 leaveComment :: Action
-leaveComment _ _ = setLexerState STEMPLATE >> alexMonadScan
+leaveComment _ _ = setLexerState STemplate >> alexMonadScan
 
 -- | Enter lisp state.
 enterLisp :: Action
-enterLisp input len = setLexerState SLISP >> mkText input len
+enterLisp input len = setLexerState SLisp >> mkText input len
 
 -- | Leave lisp state.
 leaveLisp :: Action
-leaveLisp _ _ = setLexerState STEMPLATE >> alexMonadScan
+leaveLisp _ _ = setLexerState STemplate >> alexMonadScan
 
 -- | Add character to text value.
 addCharToText :: Char -> Action
@@ -181,12 +181,12 @@ mkText (p, _, _, str) len = do
         "" -> alexMonadScan
         _  -> do
             clearLexerTextValue
-            return $ Lexeme p (TEXT $ reverse s) $ Just $ take len str
+            return $ Lexeme p (LText $ reverse s) $ Just $ take len str
 
 -- | Read and make identifier lexeme.
 mkIdentifier :: Action
 mkIdentifier (p, _, _, str) len =
-    return $ Lexeme p (IDENTIFIER str') $ Just str'
+    return $ Lexeme p (LIdentifier str') $ Just str'
   where
     str' = take len str
 
@@ -194,7 +194,7 @@ mkIdentifier (p, _, _, str) len =
 mkInteger :: Action
 mkInteger (p, _, _, str) len =
     case readDec str' of
-        [(val, _)] -> return $ Lexeme p (INTEGER val) $ Just str'
+        [(val, _)] -> return $ Lexeme p (LInteger val) $ Just str'
         _          -> lexerError "Invalid integer"
   where
     str' = take len str
@@ -203,14 +203,14 @@ mkInteger (p, _, _, str) len =
 mkDecimal :: Action
 mkDecimal (p, _, _, str) len =
     case reads str' of
-        [(val, _)] -> return $ Lexeme p (DECIMAL val) $ Just str'
+        [(val, _)] -> return $ Lexeme p (LDecimal val) $ Just str'
         _          -> lexerError "Invalid decimal"
   where
     str' = take len str
 
 -- | EOF lexeme needed by Alex.
 alexEOF :: Alex Lexeme
-alexEOF = return $ Lexeme undefined EOF Nothing
+alexEOF = return $ Lexeme undefined LEOF Nothing
 
 -- | Remove leading and trailing white space from a string.
 strip :: String -> String
@@ -248,14 +248,14 @@ leaveLexer :: Lexeme -> Alex [Lexeme]
 leaveLexer eof@(Lexeme p _ str) = do
     st <- getLexerState
     case st of
-        SCOMMENT  -> alexError "Unfinished comment block at end of file"
-        SLISP     -> alexError "Unfinished code block at end of file"
-        SSTRING   -> alexError "Unfinished string literal at end of file"
-        STEMPLATE -> do
+        SComment  -> alexError "Unfinished comment block at end of file"
+        SLisp     -> alexError "Unfinished code block at end of file"
+        SString   -> alexError "Unfinished string literal at end of file"
+        STemplate -> do
             s <- getLexerTextValue
             case s of
                 "" -> return [eof]
-                _  -> return [Lexeme p (TEXT $ reverse s) str, eof]
+                _  -> return [Lexeme p (LText $ reverse s) str, eof]
 
 -- | Run the lexer to produce lexemes.
 runLexer :: String -> Either String [Lexeme]
@@ -265,7 +265,7 @@ runLexer str =
     go = do
         (l, e) <- alexComplementError alexMonadScan
         case (l, e) of
-            (_, Just err)       -> lexerError err
-            (Lexeme _ EOF _, _) -> leaveLexer l
-            (_, _)              -> return . (l:) =<< go
+            (_, Just err)        -> lexerError err
+            (Lexeme _ LEOF _, _) -> leaveLexer l
+            (_, _)               -> return . (l:) =<< go
 }
