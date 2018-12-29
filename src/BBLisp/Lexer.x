@@ -82,7 +82,7 @@ data LexemeClass
 
 -- | Possible lexer states.
 data LexerState
-    = SINITIAL
+    = STEMPLATE
     | SCOMMENT
     | SLISP
     | SSTRING
@@ -109,7 +109,7 @@ template = 0
 -- | Initial lexer user state.
 alexInitUserState :: AlexUserState
 alexInitUserState = AlexUserState
-    { lexerState         = SINITIAL
+    { lexerState         = STEMPLATE
     , lexerTextValue     = ""
     , lexerLispValue     = []
     , parserCollIdent    = Map.empty
@@ -120,6 +120,11 @@ alexInitUserState = AlexUserState
 -- | Make lexeme from lexeme class.
 mkL :: LexemeClass -> AlexInput -> Int -> Alex Lexeme
 mkL c (p, _, _, str) len = return $ Lexeme p c $ Just $ take len str
+
+-- | Get current lexer state.
+getLexerState :: Alex LexerState
+getLexerState = Alex $ \s@AlexState{ alex_ust = ust } ->
+    Right (s, lexerState ust)
 
 -- | Modify current lexer state.
 setLexerState :: LexerState -> Alex ()
@@ -149,7 +154,7 @@ enterComment _ _ = setLexerState SCOMMENT >> alexMonadScan
 
 -- | Leave comment state.
 leaveComment :: Action
-leaveComment _ _ = setLexerState SINITIAL >> alexMonadScan
+leaveComment _ _ = setLexerState STEMPLATE >> alexMonadScan
 
 -- | Enter lisp state.
 enterLisp :: Action
@@ -157,7 +162,7 @@ enterLisp input len = setLexerState SLISP >> mkText input len
 
 -- | Leave lisp state.
 leaveLisp :: Action
-leaveLisp _ _ = setLexerState SINITIAL >> alexMonadScan
+leaveLisp _ _ = setLexerState STEMPLATE >> alexMonadScan
 
 -- | Add character to text value.
 addCharToText :: Char -> Action
@@ -237,15 +242,30 @@ alexComplementError (Alex al) =
         Left msg      -> Right (s, (undefined, Just msg))
         Right (s', x) -> Right (s', (x, Nothing))
 
+-- | Finish lexing as EOF was encountered.
+--   Make text lexeme or throw error for unfinished comment/lisp/string state.
+leaveLexer :: Lexeme -> Alex [Lexeme]
+leaveLexer eof@(Lexeme p _ str) = do
+    st <- getLexerState
+    case st of
+        SCOMMENT  -> alexError "Unfinished comment block at end of file"
+        SLISP     -> alexError "Unfinished code block at end of file"
+        SSTRING   -> alexError "Unfinished string literal at end of file"
+        STEMPLATE -> do
+            s <- getLexerTextValue
+            case s of
+                "" -> return [eof]
+                _  -> return [Lexeme p (TEXT $ reverse s) str, eof]
+
 -- | Run the lexer to produce lexemes.
 runLexer :: String -> Either String [Lexeme]
 runLexer str =
     runAlex str go
   where
     go = do
-        (t, e) <- alexComplementError alexMonadScan
-        case (t, e) of
+        (l, e) <- alexComplementError alexMonadScan
+        case (l, e) of
             (_, Just err)       -> lexerError err
-            (Lexeme _ EOF _, _) -> return [t]
-            (_, _)              -> return . (t:) =<< go
+            (Lexeme _ EOF _, _) -> leaveLexer l
+            (_, _)              -> return . (l:) =<< go
 }

@@ -4,6 +4,8 @@ module BBLisp.LexerSpec
       spec
     ) where
 
+import Data.List (intercalate)
+
 import BBLisp.Lexer (Lexeme(..), LexemeClass(..), runLexer)
 import Test.Hspec
 
@@ -23,7 +25,7 @@ tokens (Right ls) = map f ls
 
 -- | Sample template containing simple primitive tokens.
 sampleTemplate1 :: String
-sampleTemplate1 = unlines
+sampleTemplate1 = intercalate "\n"
     [ "Hello {{ name }}."
     , "{{! I am invisible }}"
     , "The answer is {{ 42 }}."
@@ -33,8 +35,7 @@ sampleTemplate1 = unlines
 -- | Expected tokens scanned from `sampleTemplate1`.
 expectedTokens1 :: [LexemeClass]
 expectedTokens1 =
-    [
-      TEXT "Hello "
+    [ TEXT "Hello "
     , IDENTIFIER "name"
     , TEXT ".\n\nThe answer is "
     , INTEGER 42
