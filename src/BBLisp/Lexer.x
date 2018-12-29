@@ -1,8 +1,12 @@
 {
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
+-- ^ Generated template contains unused qualified import of Data.Monad.
+--   This should be reviewed in the future.
+
 module BBLisp.Lexer
     (
       -- * Types
-      Lexeme
+      Lexeme(..)
     , LexemeClass(..)
       -- * Monads
     , AlexUserState

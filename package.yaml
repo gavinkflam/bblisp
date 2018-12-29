@@ -52,3 +52,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - bblisp
+    - hspec >= 2.6 && < 2.7
