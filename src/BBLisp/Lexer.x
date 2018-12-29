@@ -8,6 +8,10 @@ module BBLisp.Lexer
     , AlexUserState
     ) where
 
+import Data.Char (isSpace)
+import Data.List (dropWhileEnd)
+import Numeric (readDec)
+
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Scientific (Scientific)
@@ -145,7 +149,46 @@ mkIdentifier (p, _, _, str) len =
   where
     str' = take len str
 
+-- | Read and make integer lexeme.
+mkInteger :: Action
+mkInteger (p, _, _, str) len =
+    case readDec str' of
+        [(val, _)] -> return $ Lexeme p (INTEGER val) $ Just str'
+        _          -> lexerError "Invalid integer"
+  where
+    str' = take len str
+
+-- | Read and make decimal lexeme.
+mkDecimal :: Action
+mkDecimal (p, _, _, str) len =
+    case reads str' of
+        [(val, _)] -> return $ Lexeme p (DECIMAL val) $ Just str'
+        _          -> lexerError "Invalid decimal"
+  where
+    str' = take len str
+
 -- | EOF lexeme needed by Alex.
 alexEOF :: Alex Lexeme
 alexEOF = return $ Lexeme undefined EOF Nothing
+
+-- | Remove leading and trailing white space from a string.
+strip :: String -> String
+strip = dropWhileEnd isSpace . dropWhile isSpace
+
+-- | Show line and column number in a string.
+showPosn :: AlexPosn -> String
+showPosn (AlexPn _ line col) = concat [show line, ":", show col]
+
+-- | Produce a lexer error with readable error message and location information.
+lexerError :: String -> Alex a
+lexerError msg = do
+    (p, c, _, str) <- alexGetInput
+    alexError $ concat [strip msg, " at ", showPosn p, friendlyMsg c str]
+  where
+    trimMsg s        = take 30 $ strip $ takeWhile (`elem` "\r\n") $ s
+    friendlyMsg _ "" = " at end of file"
+    friendlyMsg c s  =
+        case trimMsg s of
+            "" -> " before end of line"
+            m  -> concat ["on char ", show c, " before: '", m, "'"]
 }
