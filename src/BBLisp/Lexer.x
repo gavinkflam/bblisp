@@ -43,9 +43,9 @@ state :-
 <0>       "{{!"         { enterComment `andBegin` comment }
 <0>       "{{#"         { enterLisp    `andBegin` lisp }
 <0>       "{{"          { enterLisp    `andBegin` lisp }
-<0>       .             ;
-<0>       \n            { skip }
-<comment> "}}"          { leaveComment `andBegin` initial }
+<0>       .             { addToText }
+<0>       \n            { addCharToText '\n' }
+<comment> "}}"          { leaveComment `andBegin` template }
 <comment> .             ;
 <comment> \n            { skip }
 <lisp>    \n            { skip }
@@ -53,7 +53,7 @@ state :-
 <lisp>    @identifier   { mkIdentifier }
 <lisp>    @decimal      { mkDecimal }
 <lisp>    @integer      { mkInteger }
-<lisp>    "}}"          { leaveLisp `andBegin` initial }
+<lisp>    "}}"          { leaveLisp `andBegin` template }
 <lisp>    "("           { mkL LPAREN }
 <lisp>    ")"           { mkL RPAREN }
 
@@ -94,6 +94,7 @@ data AlexUserState = AlexUserState
     {
       -- Used by lexer phase
       lexerState         :: LexerState
+    , lexerTextValue     :: String
     , lexerLispValue     :: [LexemeClass]
       -- Used by parser phase
     , parserCollIdent    :: Map String Int
@@ -101,14 +102,15 @@ data AlexUserState = AlexUserState
     , parserPos          :: Pos
     }
 
--- | Initial lexer state.
-initial :: Int
-initial = 0
+-- | Template lexer state.
+template :: Int
+template = 0
 
 -- | Initial lexer user state.
 alexInitUserState :: AlexUserState
 alexInitUserState = AlexUserState
     { lexerState         = SINITIAL
+    , lexerTextValue     = ""
     , lexerLispValue     = []
     , parserCollIdent    = Map.empty
     , parserCurrentToken = Lexeme undefined EOF Nothing
@@ -124,29 +126,57 @@ setLexerState :: LexerState -> Alex ()
 setLexerState v = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerState = v } }, ())
 
+-- | Get the text value string.
+getLexerTextValue :: Alex String
+getLexerTextValue = Alex $ \s@AlexState{ alex_ust = ust } ->
+    Right (s, lexerTextValue ust)
+
+-- | Add the character to text value string.
+addCharToLexerTextValue :: Char -> Alex ()
+addCharToLexerTextValue c = Alex $ \s ->
+    Right (s{ alex_ust=(alex_ust s){ lexerTextValue = newVal s } }, ())
+  where
+    newVal s = c : lexerTextValue (alex_ust s)
+
+-- | Clear text value string.
+clearLexerTextValue :: Alex ()
+clearLexerTextValue = Alex $ \s ->
+    Right (s{ alex_ust=(alex_ust s){ lexerTextValue = "" } }, ())
+
 -- | Enter comment state.
 enterComment :: Action
-enterComment input len = do
-    setLexerState SCOMMENT
-    skip input len
+enterComment _ _ = setLexerState SCOMMENT >> alexMonadScan
 
 -- | Leave comment state.
 leaveComment :: Action
-leaveComment input len = do
-    setLexerState SINITIAL
-    skip input len
+leaveComment _ _ = setLexerState SINITIAL >> alexMonadScan
 
 -- | Enter lisp state.
 enterLisp :: Action
-enterLisp input len = do
-    setLexerState SLISP
-    skip input len
+enterLisp input len = setLexerState SLISP >> mkText input len
 
 -- | Leave lisp state.
 leaveLisp :: Action
-leaveLisp input len = do
-    setLexerState SINITIAL
-    skip input len
+leaveLisp _ _ = setLexerState SINITIAL >> alexMonadScan
+
+-- | Add character to text value.
+addCharToText :: Char -> Action
+addCharToText c _ _ = addCharToLexerTextValue c >> alexMonadScan
+
+-- | Add the current character to text value store.
+addToText :: Action
+addToText i@(_, _, _, c:_) 1 = addCharToText c i 1
+addToText _ _                = error "Invalid call to addToText"
+
+-- | Make the text lexeme if there is any string in text value.
+mkText :: Action
+mkText (p, _, _, str) len = do
+    s <- getLexerTextValue
+    case s of
+        "" -> alexMonadScan
+        _  -> do
+            clearLexerTextValue
+            return $ Lexeme p (TEXT $ reverse s) $ Just $ take len str
 
 -- | Read and make identifier lexeme.
 mkIdentifier :: Action
