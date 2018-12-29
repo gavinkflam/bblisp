@@ -36,7 +36,7 @@ $subsequent        = [$alpha $digit $specialsubsequent]
 
 @identifier        = $initial$subsequent*
 @integer           = $digit+
-@decimal           = $digit+.$digit+
+@decimal           = $digit+\.$digit+
 
 state :-
 
