@@ -33,9 +33,15 @@ sampleTemplate1 = unlines
 -- | Expected tokens scanned from `sampleTemplate1`.
 expectedTokens1 :: [LexemeClass]
 expectedTokens1 =
-    [ IDENTIFIER "name"
+    [
+      TEXT "Hello "
+    , IDENTIFIER "name"
+    , TEXT ".\n\nThe answer is "
     , INTEGER 42
+    , TEXT ".\nFirst 10 digits of "
     , IDENTIFIER "$pi"
+    , TEXT " is "
     , DECIMAL $ read "3.1415926535"
+    , TEXT "."
     , EOF
     ]
