@@ -6,6 +6,8 @@ module BBLisp.Lexer
     , LexemeClass(..)
       -- * Monads
     , AlexUserState
+      -- * Lexing
+    , runLexer
     ) where
 
 import Data.Char (isSpace)
@@ -191,4 +193,25 @@ lexerError msg = do
         case trimMsg s of
             "" -> " before end of line"
             m  -> concat ["on char ", show c, " before: '", m, "'"]
+
+-- | Capture the error message to complement it with position information.
+alexComplementError :: Alex a -> Alex (a, Maybe String)
+alexComplementError (Alex al) =
+    Alex f
+  where
+    f s = case al s of
+        Left msg      -> Right (s, (undefined, Just msg))
+        Right (s', x) -> Right (s', (x, Nothing))
+
+-- | Run the lexer to produce lexemes.
+runLexer :: String -> Either String [Lexeme]
+runLexer str =
+    runAlex str go
+  where
+    go = do
+        (t, e) <- alexComplementError alexMonadScan
+        case (t, e) of
+            (_, Just err)       -> lexerError err
+            (Lexeme _ EOF _, _) -> return [t]
+            (_, _)              -> return . (t:) =<< go
 }
