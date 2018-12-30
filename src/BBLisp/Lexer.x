@@ -62,7 +62,7 @@ state :-
 
 {
 -- | Lexer user state function type.
-type Action = AlexInput -> Int -> Alex Lexeme
+type Action = AlexInput -> Int -> Alex [Lexeme]
 
 -- | Optional position information.
 type Pos    = Maybe AlexPosn
@@ -129,8 +129,8 @@ alexInitUserState = AlexUserState
     }
 
 -- | Make lexeme from lexeme class.
-mkL :: LexemeClass -> AlexInput -> Int -> Alex Lexeme
-mkL c (p, _, _, str) len = return $ Lexeme p c $ Just $ take len str
+mkL :: LexemeClass -> AlexInput -> Int -> Alex [Lexeme]
+mkL c (p, _, _, str) len = return [Lexeme p c $ Just $ take len str]
 
 -- | Get current lexer state.
 getLexerState :: Alex LexerState
@@ -193,10 +193,12 @@ leaveComment _ _ = setLexerState STemplate >> alexMonadScan
 -- | Common action for entering lisp state.
 enterLispCommon :: LexemeClass -> Action
 enterLispCommon l input len = do
-    setLexerState SLisp
     lLex <- mkL l input len
-    text <- mkText input len
-    return [lLex, text]
+    text <- mkTextMaybe input len
+    setLexerState SLisp
+    case text of
+        Nothing -> return lLex
+        Just t  -> clearLexerTextValue >> return (t:lLex)
 
 -- | Enter lisp state.
 enterLisp :: LexemeClass -> Action
@@ -235,19 +237,17 @@ addToText i@(_, _, _, c:_) 1 = addCharToText c i 1
 addToText _ _                = error "Invalid call to addToText"
 
 -- | Make the text lexeme if there is any string in text value.
-mkText :: Action
-mkText (p, _, _, str) len = do
+mkTextMaybe :: AlexInput -> Int -> Alex (Maybe Lexeme)
+mkTextMaybe (p, _, _, str) len = do
     s <- getLexerTextValue
     case s of
-        "" -> alexMonadScan
-        _  -> do
-            clearLexerTextValue
-            return $ Lexeme p (LText $ reverse s) $ Just $ take len str
+        "" -> return Nothing
+        _  -> return $ Just $ Lexeme p (LText $ reverse s) $ Just $ take len str
 
 -- | Read and make identifier lexeme.
 mkIdentifier :: Action
 mkIdentifier (p, _, _, str) len =
-    return $ Lexeme p (LIdentifier str') $ Just str'
+    return [Lexeme p (LIdentifier str') $ Just str']
   where
     str' = take len str
 
@@ -255,7 +255,7 @@ mkIdentifier (p, _, _, str) len =
 mkInteger :: Action
 mkInteger (p, _, _, str) len =
     case readDec str' of
-        [(val, _)] -> return $ Lexeme p (LInteger val) $ Just str'
+        [(val, _)] -> return [Lexeme p (LInteger val) $ Just str']
         _          -> lexerError "Invalid integer"
   where
     str' = take len str
@@ -264,14 +264,14 @@ mkInteger (p, _, _, str) len =
 mkDecimal :: Action
 mkDecimal (p, _, _, str) len =
     case reads str' of
-        [(val, _)] -> return $ Lexeme p (LDecimal val) $ Just str'
+        [(val, _)] -> return [Lexeme p (LDecimal val) $ Just str']
         _          -> lexerError "Invalid decimal"
   where
     str' = take len str
 
 -- | EOF lexeme needed by Alex.
-alexEOF :: Alex Lexeme
-alexEOF = return $ Lexeme undefined LEOF Nothing
+alexEOF :: Alex [Lexeme]
+alexEOF = return [Lexeme undefined LEOF Nothing]
 
 -- | Remove leading and trailing white space from a string.
 strip :: String -> String
@@ -326,7 +326,7 @@ runLexer str =
     go = do
         (l, e) <- alexComplementError alexMonadScan
         case (l, e) of
-            (_, Just err)        -> lexerError err
-            (Lexeme _ LEOF _, _) -> leaveLexer l
-            (_, _)               -> return . (l:) =<< go
+            (_, Just err)               -> lexerError err
+            ([l'@(Lexeme _ LEOF _)], _) -> leaveLexer l'
+            (_, _)                      -> return . (l++) =<< go
 }
