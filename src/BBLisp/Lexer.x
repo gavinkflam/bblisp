@@ -198,15 +198,15 @@ enterLisp l@LLMustachePound input len =
     pushLexerMustacheStack LLMustachePound >> enterLispCommon l input len
 enterLisp l@LLMustacheCaret input len =
     pushLexerMustacheStack LLMustacheCaret >> enterLispCommon l input len
-enterLisp l _ _ = error $ concat ["Invalid call to enterLisp: ", show l]
+enterLisp l _ _ = error $ "Invalid call to enterLisp: " ++ show l
 
 -- | Common action for closing mustache tags.
 closeMustacheCommon :: LexemeClass -> LexemeClass -> Action
 closeMustacheCommon expect l input len = do
     top <- peekLexerMustacheStack
-    case top == Just expect of
-        True -> popLexerMustacheStack >> mkTextEndingLexeme l input len
-        _    -> lexerError $ concat ["Unmatched closing tag ", show l]
+    if top == Just expect
+        then popLexerMustacheStack >> mkTextEndingLexeme l input len
+        else lexerError $ "Unmatched closing tag " ++ show l
 
 -- | Close mustache tag.
 closeMustache :: LexemeClass -> Action
@@ -214,12 +214,12 @@ closeMustache l@LCloseMustachePound input len =
     closeMustacheCommon LLMustachePound l input len
 closeMustache l@LCloseMustacheCaret input len =
     closeMustacheCommon LLMustacheCaret l input len
-closeMustache l _ _ = error $ concat ["Invalid call to closeMustache: ", show l]
+closeMustache l _ _ = error $ "Invalid call to closeMustache: " ++ show l
 
 -- | Leave lisp state.
 leaveLisp :: LexemeClass -> Action
 leaveLisp l@LRMustache input len = setLexerState STemplate >> mkL l input len
-leaveLisp l _ _ = error $ concat ["Invalid call to leaveLisp: ", show l]
+leaveLisp l _ _ = error $ "Invalid call to leaveLisp: " ++ show l
 
 -- | Add character to text value.
 addCharToText :: Char -> Action
@@ -296,7 +296,7 @@ lexerError msg = do
     (p, c, _, str) <- alexGetInput
     alexError $ concat [strip msg, " at ", showPosn p, friendlyMsg c str]
   where
-    trimMsg s        = take 30 $ strip $ takeWhile (`elem` "\r\n") $ s
+    trimMsg s        = take 30 $ strip $ takeWhile (`elem` "\r\n") s
     friendlyMsg _ "" = " at end of file"
     friendlyMsg c s  =
         case trimMsg s of
@@ -337,5 +337,5 @@ runLexer str =
         case (l, e) of
             (_, Just err)               -> lexerError err
             ([l'@(Lexeme _ LEOF _)], _) -> leaveLexer l'
-            (_, _)                      -> return . (l++) =<< go
+            (_, _)                      -> (l++) <$> go
 }
