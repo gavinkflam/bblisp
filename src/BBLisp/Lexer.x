@@ -324,17 +324,22 @@ alexComplementError (Alex al) =
 --   Make text lexeme or throw error for unfinished comment/lisp/string state
 --   or unclosed mustache tag.
 leaveLexer :: Lexeme -> Alex [Lexeme]
-leaveLexer eof@(Lexeme p _ str) = do
-    st <- getLexerState
-    case st of
-        SComment  -> alexError "Unclosed comment block at end of file"
-        SLisp     -> alexError "Unclosed code block at end of file"
-        SString   -> alexError "Unclosed string literal at end of file"
-        STemplate -> do
-            s <- getLexerTextValue
-            case s of
-                "" -> return [eof]
-                _  -> return [Lexeme p (LText $ reverse s) str, eof]
+leaveLexer eof@(Lexeme p _ str) =
+    leaveState =<< getLexerState
+  where
+    unclosedErr t = alexError $ "Unclosed " ++ t ++ " at end of file"
+    leaveState SComment  = unclosedErr "comment block"
+    leaveState SLisp     = unclosedErr "code block"
+    leaveState SString   = unclosedErr "string literal"
+    leaveState STemplate = leaveTemplate =<< peekLexerMustacheStack
+    leaveTemplate (Just LLMustachePound) = unclosedErr "section block"
+    leaveTemplate (Just LLMustacheCaret) = unclosedErr "invert section block"
+    leaveTemplate (Just e)               = error $ "Invalid stack top" ++ show e
+    leaveTemplate Nothing                = do
+        s <- getLexerTextValue
+        case s of
+            "" -> return [eof]
+            _  -> return [Lexeme p (LText $ reverse s) str, eof]
 
 -- | Run the lexer to produce lexemes.
 runLexer :: String -> Either String [Lexeme]
