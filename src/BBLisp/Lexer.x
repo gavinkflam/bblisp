@@ -1,6 +1,6 @@
 {
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
--- ^ Generated template contains unused qualified import of Data.Monad.
+-- ^ Generated template contains unused qualified import of Control.Monad.
 --   This should be reviewed in the future.
 
 module BBLisp.Lexer
@@ -61,7 +61,7 @@ state :-
 <lisp>    ")"           { mkL LRParen }
 
 {
--- | Lexer user state function type.
+-- | Lexer action type.
 type Action = AlexInput -> Int -> Alex [Lexeme]
 
 -- | Optional position information.
@@ -104,7 +104,6 @@ data AlexUserState = AlexUserState
       -- Used by lexer phase
       lexerState         :: LexerState
     , lexerTextValue     :: String
-    , lexerLispValue     :: [LexemeClass]
     , lexerMustacheStack :: [LexemeClass]
       -- Used by parser phase
     , parserCollIdent    :: Map String Int
@@ -121,7 +120,6 @@ alexInitUserState :: AlexUserState
 alexInitUserState = AlexUserState
     { lexerState         = STemplate
     , lexerTextValue     = ""
-    , lexerLispValue     = []
     , lexerMustacheStack = []
     , parserCollIdent    = Map.empty
     , parserCurrentToken = Lexeme undefined LEOF Nothing
@@ -187,6 +185,8 @@ leaveComment :: Action
 leaveComment _ _ = setLexerState STemplate >> alexMonadScan
 
 -- | Common action for entering lisp state.
+--
+--   Text lexeme should be added if applicable.
 enterLispCommon :: LexemeClass -> Action
 enterLispCommon l input len =
     setLexerState SLisp >> mkTextEndingLexeme l input len
@@ -201,6 +201,11 @@ enterLisp l@LLMustacheCaret input len =
 enterLisp l _ _ = error $ "Invalid call to enterLisp: " ++ show l
 
 -- | Common action for closing mustache tags.
+--
+--   The closing tag should be checked against the mustache stack.
+--
+--   Text lexeme should be added if applicable.
+--   Closing tag lexeme should be added as well.
 closeMustacheCommon :: LexemeClass -> LexemeClass -> Action
 closeMustacheCommon expect l input len = do
     top <- peekLexerMustacheStack
@@ -313,7 +318,9 @@ alexComplementError (Alex al) =
         Right (s', x) -> Right (s', (x, Nothing))
 
 -- | Finish lexing as EOF was encountered.
---   Make text lexeme or throw error for unfinished comment/lisp/string state.
+--
+--   Make text lexeme or throw error for unfinished comment/lisp/string state
+--   or unclosed mustache tag.
 leaveLexer :: Lexeme -> Alex [Lexeme]
 leaveLexer eof@(Lexeme p _ str) = do
     st <- getLexerState
