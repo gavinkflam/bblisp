@@ -56,7 +56,7 @@ state :-
 <lisp>    @identifier   { mkIdentifier }
 <lisp>    @decimal      { mkDecimal }
 <lisp>    @integer      { mkInteger }
-<lisp>    "}}"          { leaveLisp `andBegin` template }
+<lisp>    "}}"          { leaveLisp LRMustache `andBegin` template }
 <lisp>    "("           { mkL LLParen }
 <lisp>    ")"           { mkL LRParen }
 
@@ -128,10 +128,6 @@ alexInitUserState = AlexUserState
     , parserPos          = Nothing
     }
 
--- | Make lexeme from lexeme class.
-mkL :: LexemeClass -> AlexInput -> Int -> Alex [Lexeme]
-mkL c (p, _, _, str) len = return [Lexeme p c $ Just $ take len str]
-
 -- | Get current lexer state.
 getLexerState :: Alex LexerState
 getLexerState = Alex $ \s@AlexState{ alex_ust = ust } ->
@@ -192,13 +188,8 @@ leaveComment _ _ = setLexerState STemplate >> alexMonadScan
 
 -- | Common action for entering lisp state.
 enterLispCommon :: LexemeClass -> Action
-enterLispCommon l input len = do
-    lLex <- mkL l input len
-    text <- mkTextMaybe input len
-    setLexerState SLisp
-    case text of
-        Nothing -> return lLex
-        Just t  -> clearLexerTextValue >> return (t:lLex)
+enterLispCommon l input len =
+    setLexerState SLisp >> mkTextEndingLexeme l input len
 
 -- | Enter lisp state.
 enterLisp :: LexemeClass -> Action
@@ -210,22 +201,25 @@ enterLisp l@LLMustacheCaret input len =
 enterLisp l _ _ = error $ concat ["Invalid call to enterLisp: ", show l]
 
 -- | Common action for closing mustache tags.
-closeMustacheCommon :: LexemeClass -> Action
-closeMustacheCommon l input len = do
+closeMustacheCommon :: LexemeClass -> LexemeClass -> Action
+closeMustacheCommon expect l input len = do
     top <- peekLexerMustacheStack
-    case top == Just l of
-        True -> popLexerMustacheStack >> mkL l input len
+    case top == Just expect of
+        True -> popLexerMustacheStack >> mkTextEndingLexeme l input len
         _    -> lexerError $ concat ["Unmatched closing tag ", show l]
 
 -- | Close mustache tag.
 closeMustache :: LexemeClass -> Action
-closeMustache l@LCloseMustachePound input len = closeMustacheCommon l input len
-closeMustache l@LCloseMustacheCaret input len = closeMustacheCommon l input len
+closeMustache l@LCloseMustachePound input len =
+    closeMustacheCommon LLMustachePound l input len
+closeMustache l@LCloseMustacheCaret input len =
+    closeMustacheCommon LLMustacheCaret l input len
 closeMustache l _ _ = error $ concat ["Invalid call to closeMustache: ", show l]
 
 -- | Leave lisp state.
-leaveLisp :: Action
-leaveLisp _ _ = setLexerState STemplate >> alexMonadScan
+leaveLisp :: LexemeClass -> Action
+leaveLisp l@LRMustache input len = setLexerState STemplate >> mkL l input len
+leaveLisp l _ _ = error $ concat ["Invalid call to leaveLisp: ", show l]
 
 -- | Add character to text value.
 addCharToText :: Char -> Action
@@ -236,6 +230,10 @@ addToText :: Action
 addToText i@(_, _, _, c:_) 1 = addCharToText c i 1
 addToText _ _                = error "Invalid call to addToText"
 
+-- | Make lexeme from lexeme class.
+mkL :: LexemeClass -> Action
+mkL l (p, _, _, str) len = return [Lexeme p l $ Just $ take len str]
+
 -- | Make the text lexeme if there is any string in text value.
 mkTextMaybe :: AlexInput -> Int -> Alex (Maybe Lexeme)
 mkTextMaybe (p, _, _, str) len = do
@@ -243,6 +241,17 @@ mkTextMaybe (p, _, _, str) len = do
     case s of
         "" -> return Nothing
         _  -> return $ Just $ Lexeme p (LText $ reverse s) $ Just $ take len str
+
+-- | Make lexeme from lexeme class.
+--
+--   Make the preceeding text lexeme and clear text value as well if applicable.
+mkTextEndingLexeme :: LexemeClass -> Action
+mkTextEndingLexeme l input len = do
+    lLex <- mkL l input len
+    text <- mkTextMaybe input len
+    case text of
+        Nothing -> return lLex
+        Just t  -> clearLexerTextValue >> return (t:lLex)
 
 -- | Read and make identifier lexeme.
 mkIdentifier :: Action
