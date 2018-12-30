@@ -26,7 +26,8 @@ tokens (Right ls) = map f ls
 -- | Sample template containing simple primitive tokens.
 sampleTemplate1 :: String
 sampleTemplate1 = intercalate "\n"
-    [ "Hello {{ name }}."
+    [ "{{# name }}Hello {{ name }}.{{/#}}"
+    , "{{^ name }}Hello world.{{/^}}"
     , "{{! I am invisible }}"
     , "The answer is {{ + (- 50 20) 12 }}."
     , "First 10 digits of {{ $pi }} is {{ 3.1415926535 }}."
@@ -35,9 +36,26 @@ sampleTemplate1 = intercalate "\n"
 -- | Expected tokens scanned from `sampleTemplate1`.
 expectedTokens1 :: [LexemeClass]
 expectedTokens1 =
-    [ LText "Hello "
+    -- First line.
+    [ LLMustachePound
     , LIdentifier "name"
-    , LText ".\n\nThe answer is "
+    , LRMustache
+    , LText "Hello "
+    , LLMustache
+    , LIdentifier "name"
+    , LRMustache
+    , LText "."
+    , LCloseMustachePound
+    -- Second line.
+    , LText "\n"
+    , LLMustacheCaret
+    , LIdentifier "name"
+    , LRMustache
+    , LText "Hello world."
+    , LCloseMustacheCaret
+    -- Third and fourth line.
+    , LText "\n\nThe answer is "
+    , LLMustache
     , LIdentifier "+"
     , LLParen
     , LIdentifier "-"
@@ -45,10 +63,16 @@ expectedTokens1 =
     , LInteger 20
     , LRParen
     , LInteger 12
+    , LRMustache
+    -- Fifth line.
     , LText ".\nFirst 10 digits of "
+    , LLMustache
     , LIdentifier "$pi"
+    , LRMustache
     , LText " is "
+    , LLMustache
     , LDecimal $ read "3.1415926535"
+    , LRMustache
     , LText "."
     , LEOF
     ]

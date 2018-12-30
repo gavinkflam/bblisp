@@ -70,6 +70,12 @@ data Lexeme = Lexeme AlexPosn LexemeClass (Maybe String)
 -- | Lexeme tokens.
 data LexemeClass
     = LEOF
+    | LLMustache
+    | LLMustachePound
+    | LLMustacheCaret
+    | LRMustache
+    | LCloseMustachePound
+    | LCloseMustacheCaret
     | LLParen
     | LRParen
     | LText       String
