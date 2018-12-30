@@ -68,7 +68,9 @@ type Action = AlexInput -> Int -> Alex [Lexeme]
 type Pos    = Maybe AlexPosn
 
 -- | Lexeme containing the position, token and text.
-data Lexeme = Lexeme AlexPosn LexemeClass (Maybe String)
+data Lexeme =
+    Lexeme AlexPosn LexemeClass (Maybe String)
+    deriving (Eq, Show)
 
 -- | Lexeme tokens.
 data LexemeClass
@@ -302,7 +304,7 @@ lexerError msg = do
     alexError $ concat [strip msg, " at ", showPosn p, friendlyMsg c str]
   where
     trimMsg s        = take 30 $ strip $ takeWhile (`elem` "\r\n") s
-    friendlyMsg _ "" = " at end of file"
+    friendlyMsg _ "" = " before end of file"
     friendlyMsg c s  =
         case trimMsg s of
             "" -> " before end of line"
@@ -325,9 +327,9 @@ leaveLexer :: Lexeme -> Alex [Lexeme]
 leaveLexer eof@(Lexeme p _ str) = do
     st <- getLexerState
     case st of
-        SComment  -> alexError "Unfinished comment block at end of file"
-        SLisp     -> alexError "Unfinished code block at end of file"
-        SString   -> alexError "Unfinished string literal at end of file"
+        SComment  -> alexError "Unclosed comment block at end of file"
+        SLisp     -> alexError "Unclosed code block at end of file"
+        SString   -> alexError "Unclosed string literal at end of file"
         STemplate -> do
             s <- getLexerTextValue
             case s of
