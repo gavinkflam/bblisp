@@ -28,7 +28,7 @@ import Data.Scientific (Scientific)
 $whitespace        = [\ \t\b]
 $digit             = 0-9
 $alpha             = [a-zA-Z]
-$specialinitial    = [\!\$\%\&\*\+\-\/\:\<\=\>\?\^\_\~]
+$specialinitial    = [\$\%\&\*\+\-\:\<\=\>\?\_\~]
 $specialsubsequent = [\!\$\%\&\*\+\-\.\/\:\<\=\>\?\@\^\_\~]
 
 $initial           = [$alpha $specialinitial]
@@ -41,8 +41,11 @@ $subsequent        = [$alpha $digit $specialsubsequent]
 state :-
 
 <0>       "{{!"         { enterComment `andBegin` comment }
-<0>       "{{#"         { enterLisp    `andBegin` lisp }
-<0>       "{{"          { enterLisp    `andBegin` lisp }
+<0>       "{{#"         { enterLisp LLMustachePound `andBegin` lisp }
+<0>       "{{^"         { enterLisp LLMustacheCaret `andBegin` lisp }
+<0>       "{{/#}}"      { closeMustache LCloseMustachePound }
+<0>       "{{/^}}"      { closeMustache LCloseMustacheCaret }
+<0>       "{{"          { enterLisp LLMustache `andBegin` lisp }
 <0>       .             { addToText }
 <0>       \n            { addCharToText '\n' }
 <comment> "}}"          { leaveComment `andBegin` template }
@@ -102,6 +105,7 @@ data AlexUserState = AlexUserState
       lexerState         :: LexerState
     , lexerTextValue     :: String
     , lexerLispValue     :: [LexemeClass]
+    , lexerMustacheStack :: [LexemeClass]
       -- Used by parser phase
     , parserCollIdent    :: Map String Int
     , parserCurrentToken :: Lexeme
@@ -118,6 +122,7 @@ alexInitUserState = AlexUserState
     { lexerState         = STemplate
     , lexerTextValue     = ""
     , lexerLispValue     = []
+    , lexerMustacheStack = []
     , parserCollIdent    = Map.empty
     , parserCurrentToken = Lexeme undefined LEOF Nothing
     , parserPos          = Nothing
@@ -154,6 +159,29 @@ clearLexerTextValue :: Alex ()
 clearLexerTextValue = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerTextValue = "" } }, ())
 
+-- | Get the top element of the mustache stack if any.
+peekLexerMustacheStack :: Alex (Maybe LexemeClass)
+peekLexerMustacheStack = Alex $ \s@AlexState{ alex_ust = ust } ->
+    case lexerMustacheStack ust of
+        []  -> Right (s, Nothing)
+        l:_ -> Right (s, Just l)
+
+-- | Remove the top element of the mustache stack if any.
+popLexerMustacheStack :: Alex (Maybe LexemeClass)
+popLexerMustacheStack = Alex $ \s@AlexState{ alex_ust = ust } ->
+    case lexerMustacheStack ust of
+        []   -> Right (s, Nothing)
+        l:ls -> Right (fSetStack s ls, Just l)
+  where
+    fSetStack s ls = s{ alex_ust=(alex_ust s){ lexerMustacheStack = ls } }
+
+-- | Add an element to the top of the mustache stack.
+pushLexerMustacheStack :: LexemeClass -> Alex ()
+pushLexerMustacheStack l = Alex $ \s@AlexState{ alex_ust = ust } ->
+    Right (fSetStack s (l:lexerMustacheStack ust), ())
+  where
+    fSetStack s ls = s{ alex_ust=(alex_ust s){ lexerMustacheStack = ls } }
+
 -- | Enter comment state.
 enterComment :: Action
 enterComment _ _ = setLexerState SComment >> alexMonadScan
@@ -162,9 +190,36 @@ enterComment _ _ = setLexerState SComment >> alexMonadScan
 leaveComment :: Action
 leaveComment _ _ = setLexerState STemplate >> alexMonadScan
 
+-- | Common action for entering lisp state.
+enterLispCommon :: LexemeClass -> Action
+enterLispCommon l input len = do
+    setLexerState SLisp
+    lLex <- mkL l input len
+    text <- mkText input len
+    return [lLex, text]
+
 -- | Enter lisp state.
-enterLisp :: Action
-enterLisp input len = setLexerState SLisp >> mkText input len
+enterLisp :: LexemeClass -> Action
+enterLisp l@LLMustache input len = enterLispCommon l input len
+enterLisp l@LLMustachePound input len =
+    pushLexerMustacheStack LLMustachePound >> enterLispCommon l input len
+enterLisp l@LLMustacheCaret input len =
+    pushLexerMustacheStack LLMustacheCaret >> enterLispCommon l input len
+enterLisp l _ _ = error $ concat ["Invalid call to enterLisp: ", show l]
+
+-- | Common action for closing mustache tags.
+closeMustacheCommon :: LexemeClass -> Action
+closeMustacheCommon l input len = do
+    top <- peekLexerMustacheStack
+    case top == Just l of
+        True -> popLexerMustacheStack >> mkL l input len
+        _    -> lexerError $ concat ["Unmatched closing tag ", show l]
+
+-- | Close mustache tag.
+closeMustache :: LexemeClass -> Action
+closeMustache l@LCloseMustachePound input len = closeMustacheCommon l input len
+closeMustache l@LCloseMustacheCaret input len = closeMustacheCommon l input len
+closeMustache l _ _ = error $ concat ["Invalid call to closeMustache: ", show l]
 
 -- | Leave lisp state.
 leaveLisp :: Action
