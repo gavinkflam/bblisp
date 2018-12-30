@@ -213,7 +213,11 @@ closeMustacheCommon expect l input len = do
     top <- peekLexerMustacheStack
     if top == Just expect
         then popLexerMustacheStack >> mkTextEndingLexeme l input len
-        else lexerError $ "Unmatched closing tag " ++ show l
+        else lexerError $ "Unmatched closing tag " ++ showTag l
+  where
+    showTag LCloseMustachePound = "{{/#}}"
+    showTag LCloseMustacheCaret = "{{/^}}"
+    showTag l'                  = error $ "Invalid call to showTag" ++ show l'
 
 -- | Close mustache tag.
 closeMustache :: LexemeClass -> Action
