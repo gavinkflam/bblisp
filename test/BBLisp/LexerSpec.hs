@@ -150,7 +150,8 @@ errorTemplate7 = "Hello {{^ name }}world{{/#}}. Goodbye."
 
 -- | Expected error for `errorTemplate7`.
 error7 :: String
-error7 = "Unmatched closing tag {{/#}} at 1:29 before '. Goodbye.'"
+error7 =
+    "Unmatched closing tag {{/#}} at 1:29 on character '}' before `. Goodbye.`"
 
 -- | Sample template with error before end of line.
 errorTemplate8 :: String

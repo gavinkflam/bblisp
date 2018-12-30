@@ -305,14 +305,14 @@ showPosn (AlexPn _ line col) = concat [show line, ":", show col]
 lexerError :: String -> Alex a
 lexerError msg = do
     (p, c, _, str) <- alexGetInput
-    alexError $ concat [strip msg, " at ", showPosn p, friendlyMsg c str]
+    alexError $ concat [msg, " at ", showPosn p, locationMsg c str]
   where
-    trimMsg s        = take 30 $ strip $ takeWhile (`elem` "\r\n") s
-    friendlyMsg _ "" = " before end of file"
-    friendlyMsg c s  =
-        case trimMsg s of
+    remainingLine s  = take 30 $ strip $ takeWhile (`notElem` "\r\n") s
+    locationMsg _ "" = " before end of file"
+    locationMsg c s  =
+        case remainingLine s of
             "" -> " before end of line"
-            m  -> concat ["on char ", show c, " before: '", m, "'"]
+            m  -> concat [" on character ", show c, " before `", m, "`"]
 
 -- | Capture the error message to complement it with position information.
 alexComplementError :: Alex a -> Alex (a, Maybe String)
@@ -353,7 +353,7 @@ runLexer str =
     go = do
         (l, e) <- alexComplementError alexMonadScan
         case (l, e) of
-            (_, Just err)               -> lexerError err
+            (_, Just err)               -> alexError err
             ([l'@(Lexeme _ LEOF _)], _) -> leaveLexer l'
             (_, _)                      -> (l++) <$> go
 }
