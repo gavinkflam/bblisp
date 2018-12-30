@@ -18,7 +18,7 @@ spec =
 
 -- | Extract tokens from lexemes.
 tokens :: Either String [Lexeme] -> [LexemeClass]
-tokens (Left _)   = []
+tokens (Left msg) = error $ "Lexer error: " ++ msg
 tokens (Right ls) = map f ls
   where
     f (Lexeme _ t _) = t
