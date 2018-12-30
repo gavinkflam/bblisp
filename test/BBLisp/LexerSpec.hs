@@ -13,7 +13,7 @@ import Test.Hspec
 spec :: Spec
 spec =
     describe "runLexer" $ do
-        it "tokenizes sample template containing all primitive tokens" $
+        it "tokenizes sample template containing all tokens" $
             tokensOf (runLexer template1) `shouldBe` tokens1
         it "returns error for unclosed code block" $
             runLexer errorTemplate1 `shouldBe` Left error1
@@ -42,37 +42,56 @@ tokensOf (Right ls) =
   where
     f (Lexeme _ l _) = l
 
--- | Sample template containing all primitive tokens.
+-- | Sample template containing all tokens.
 template1 :: String
 template1 = intercalate "\n"
-    [ "{{# name }}Hello {{ name }}.{{/#}}"
-    , "{{^ name }}Hello world.{{/^}}"
+    [ "{{# $name }}Hello {{ $name }}.{{/#}}"
+    , "{{^ $name }}Hello world.{{/^}}"
+    , "{{# $params }}{{# $$n }}{{ $$n }}{{/#}}{{^ $$n }}1{{/^}}{{/#}}"
     , "{{! I am invisible }}"
     , "The answer is {{ + (- 50 20) 12 }}."
-    , "First 10 digits of {{ $pi }} is {{ 3.1415926535 }}."
+    , "First 10 digits of {{ \"pi\" }} is {{ 3.1415926535 }}."
     ]
 
 -- | Expected tokens for `template1`.
 tokens1 :: [LexemeClass]
 tokens1 =
-    -- First line.
+    -- First line. Test for section block.
     [ LLMustachePound
-    , LIdentifier "name"
+    , LIdentifier "$name"
     , LRMustache
     , LText "Hello "
     , LLMustache
-    , LIdentifier "name"
+    , LIdentifier "$name"
     , LRMustache
     , LText "."
     , LCloseMustachePound
-    -- Second line.
+    -- Second line. Test for invert section block.
     , LText "\n"
     , LLMustacheCaret
-    , LIdentifier "name"
+    , LIdentifier "$name"
     , LRMustache
     , LText "Hello world."
     , LCloseMustacheCaret
-    -- Third and fourth line.
+    -- Third line. Test for nested section blocks.
+    , LText "\n"
+    , LLMustachePound
+    , LIdentifier "$params"
+    , LRMustache
+    , LLMustachePound
+    , LIdentifier "$$n"
+    , LRMustache
+    , LLMustache
+    , LIdentifier "$$n"
+    , LRMustache
+    , LCloseMustachePound
+    , LLMustacheCaret
+    , LIdentifier "$$n"
+    , LRMustache
+    , LText "1"
+    , LCloseMustacheCaret
+    , LCloseMustachePound
+    -- Fourth and fifth line. Test for comment, code block, parens and integer.
     , LText "\n\nThe answer is "
     , LLMustache
     , LIdentifier "+"
@@ -83,10 +102,10 @@ tokens1 =
     , LRParen
     , LInteger 12
     , LRMustache
-    -- Fifth line.
+    -- Sixth line. Test for code block, string and decimal.
     , LText ".\nFirst 10 digits of "
     , LLMustache
-    , LIdentifier "$pi"
+    , LString "pi"
     , LRMustache
     , LText " is "
     , LLMustache
