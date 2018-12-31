@@ -27,12 +27,14 @@ spec =
             runLexer errorTemplate5 `shouldBe` Left error5
         it "returns error for unmatched closing invert section tag" $
             runLexer errorTemplate6 `shouldBe` Left error6
-        it "returns error in the middle of line" $
+        it "returns error for unmatched nested closing section tag" $
             runLexer errorTemplate7 `shouldBe` Left error7
-        it "returns error before end of line" $
+        it "returns error in the middle of line" $
             runLexer errorTemplate8 `shouldBe` Left error8
-        it "returns error before end of file" $
+        it "returns error before end of line" $
             runLexer errorTemplate9 `shouldBe` Left error9
+        it "returns error before end of file" $
+            runLexer errorTemplate10 `shouldBe` Left error10
 
 -- | Extract tokens from lexemes.
 tokensOf :: Either String [Lexeme] -> [LexemeClass]
@@ -163,30 +165,38 @@ errorTemplate6 = "Hello {{^ name }}world{{/#}}"
 error6 :: String
 error6 = "Unmatched closing tag {{/#}} at 1:29 before end of file"
 
--- | Sample template with error in the middle of line.
+-- | Sample template with unmatched nested closing section block.
 errorTemplate7 :: String
-errorTemplate7 = "Hello {{^ name }}world{{/#}}. Goodbye."
+errorTemplate7 = "Hello {{# name }}{{^ name }}world{{/#}}{{/^}}"
 
 -- | Expected error for `errorTemplate7`.
 error7 :: String
-error7 =
+error7 = "Unmatched closing tag {{/#}} at 1:40 on character '}' before `{{/^}}`"
+
+-- | Sample template with error in the middle of line.
+errorTemplate8 :: String
+errorTemplate8 = "Hello {{^ name }}world{{/#}}. Goodbye."
+
+-- | Expected error for `errorTemplate8`.
+error8 :: String
+error8 =
     "Unmatched closing tag {{/#}} at 1:29 on character '}' before `. Goodbye.`"
 
 -- | Sample template with error before end of line.
-errorTemplate8 :: String
-errorTemplate8 = intercalate "\n"
+errorTemplate9 :: String
+errorTemplate9 = intercalate "\n"
     [ "Hello {{^ name }}world{{/#}}"
     , "and goodbye."
     ]
 
--- | Expected error for `errorTemplate8`.
-error8 :: String
-error8 = "Unmatched closing tag {{/#}} at 1:29 before end of line"
-
--- | Sample template with error before end of file.
-errorTemplate9 :: String
-errorTemplate9 = "Hello world{{/^}}"
-
 -- | Expected error for `errorTemplate9`.
 error9 :: String
-error9 = "Unmatched closing tag {{/^}} at 1:18 before end of file"
+error9 = "Unmatched closing tag {{/#}} at 1:29 before end of line"
+
+-- | Sample template with error before end of file.
+errorTemplate10 :: String
+errorTemplate10 = "Hello world{{/^}}"
+
+-- | Expected error for `errorTemplate10`.
+error10 :: String
+error10 = "Unmatched closing tag {{/^}} at 1:18 before end of file"
