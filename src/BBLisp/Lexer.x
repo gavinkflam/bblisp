@@ -57,8 +57,17 @@ state :-
 <lisp>    @decimal      { mkDecimal }
 <lisp>    @integer      { mkInteger }
 <lisp>    "}}"          { leaveLisp LRMustache `andBegin` template }
-<lisp>    "("           { mkL LLParen }
-<lisp>    ")"           { mkL LRParen }
+<lisp>    \"            { enterString `andBegin` string }
+<lisp>    \(            { mkL LLParen }
+<lisp>    \)            { mkL LRParen }
+<string>  \\n           { addCharToString '\n' }
+<string>  \\r           { addCharToString '\r' }
+<string>  \\t           { addCharToString '\t' }
+<string>  \\\"          { addCharToString '\"' }
+<string>  \\\\          { addCharToString '\\' }
+<string>  \"            { leaveString `andBegin` lisp }
+<string>  .             { addToString }
+<string>  \n            { \_ _ -> lexerError "Multiline string literal" }
 
 {
 -- | Lexer action type.
@@ -106,6 +115,7 @@ data AlexUserState = AlexUserState
       -- Used by lexer phase
       lexerState         :: LexerState
     , lexerTextValue     :: String
+    , lexerStringValue   :: String
     , lexerMustacheStack :: [LexemeClass]
       -- Used by parser phase
     , parserCollIdent    :: Map String Int
@@ -122,6 +132,7 @@ alexInitUserState :: AlexUserState
 alexInitUserState = AlexUserState
     { lexerState         = STemplate
     , lexerTextValue     = ""
+    , lexerStringValue   = ""
     , lexerMustacheStack = []
     , parserCollIdent    = Map.empty
     , parserCurrentToken = Lexeme undefined LEOF Nothing
@@ -138,22 +149,39 @@ setLexerState :: LexerState -> Alex ()
 setLexerState v = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerState = v } }, ())
 
--- | Get the text value string.
+-- | Get the text value.
 getLexerTextValue :: Alex String
 getLexerTextValue = Alex $ \s@AlexState{ alex_ust = ust } ->
     Right (s, lexerTextValue ust)
 
--- | Add the character to text value string.
+-- | Add the character to text value.
 addCharToLexerTextValue :: Char -> Alex ()
 addCharToLexerTextValue c = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerTextValue = newVal s } }, ())
   where
     newVal s = c : lexerTextValue (alex_ust s)
 
--- | Clear text value string.
+-- | Clear text value.
 clearLexerTextValue :: Alex ()
 clearLexerTextValue = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerTextValue = "" } }, ())
+
+-- | Get the string value.
+getLexerStringValue :: Alex String
+getLexerStringValue = Alex $ \s@AlexState{ alex_ust = ust } ->
+    Right (s, lexerStringValue ust)
+
+-- | Add the character to string value.
+addCharToLexerStringValue :: Char -> Alex ()
+addCharToLexerStringValue c = Alex $ \s ->
+    Right (s{ alex_ust=(alex_ust s){ lexerStringValue = newVal s } }, ())
+  where
+    newVal s = c : lexerStringValue (alex_ust s)
+
+-- | Clear string value.
+clearLexerStringValue :: Alex ()
+clearLexerStringValue = Alex $ \s ->
+    Right (s{ alex_ust=(alex_ust s){ lexerStringValue = "" } }, ())
 
 -- | Get the top element of the mustache stack if any.
 peekLexerMustacheStack :: Alex (Maybe LexemeClass)
@@ -202,6 +230,17 @@ enterLisp l@LLMustacheCaret input len =
     pushLexerMustacheStack LLMustacheCaret >> enterLispCommon l input len
 enterLisp l _ _ = error $ "Invalid call to enterLisp: " ++ show l
 
+-- | Enter string state.
+enterString :: Action
+enterString _ _ = setLexerState SString >> alexMonadScan
+
+-- | Leave string state.
+leaveString :: Action
+leaveString input len =
+    setLexerState SLisp >> getLexerStringValue >>= mkString
+  where
+    mkString s = mkL (LString $ reverse s) input len
+
 -- | Common action for closing mustache tags.
 --
 --   The closing tag should be checked against the mustache stack.
@@ -240,6 +279,15 @@ addCharToText c _ _ = addCharToLexerTextValue c >> alexMonadScan
 addToText :: Action
 addToText i@(_, _, _, c:_) 1 = addCharToText c i 1
 addToText _ _                = error "Invalid call to addToText"
+
+-- | Add character to string value.
+addCharToString :: Char -> Action
+addCharToString c _ _ = addCharToLexerStringValue c >> alexMonadScan
+
+-- | Add the current character to string value store.
+addToString :: Action
+addToString i@(_, _, _, c:_) 1 = addCharToString c i 1
+addToString _ _                = error "Invalid call to addToString"
 
 -- | Make lexeme from lexeme class.
 mkL :: LexemeClass -> Action
