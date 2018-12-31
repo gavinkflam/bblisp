@@ -23,6 +23,8 @@ spec =
             runLexer unclosedTest3 `shouldBe` Left unclosedTestErr3
         it "returns error for unclosed invert section block" $
             runLexer unclosedTest4 `shouldBe` Left unclosedTestErr4
+        it "returns error for unclosed string literal" $
+            runLexer unclosedTest5 `shouldBe` Left unclosedTestErr5
         it "returns error for unmatched closing section tag" $
             runLexer unmatchedTest1 `shouldBe` Left unmatchedTestErr1
         it "returns error for unmatched closing invert section tag" $
@@ -148,6 +150,14 @@ unclosedTest4 = "Hello {{^ name }}world"
 -- | Expected error for `unclosedTest4`.
 unclosedTestErr4 :: String
 unclosedTestErr4 = "Unclosed invert section block at end of file"
+
+-- | Sample template with unclosed invert section block.
+unclosedTest5 :: String
+unclosedTest5 = "Hello {{ \"world"
+
+-- | Expected error for `unclosedTest5`.
+unclosedTestErr5 :: String
+unclosedTestErr5 = "Unclosed string literal at end of file"
 
 -- | Sample template with unmatched closing section block.
 unmatchedTest1 :: String
