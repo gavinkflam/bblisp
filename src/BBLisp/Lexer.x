@@ -65,9 +65,10 @@ state :-
 <string>  \\t           { addCharToString '\t' }
 <string>  \\\"          { addCharToString '\"' }
 <string>  \\\\          { addCharToString '\\' }
+<string>  \\.           { unknownEscapeSequence }
 <string>  \"            { leaveString `andBegin` lisp }
 <string>  .             { addToString }
-<string>  \n            { \_ _ -> lexerError "Multiline string literal" }
+<string>  \n            { invalidMultilineString }
 
 {
 -- | Lexer action type.
@@ -336,6 +337,15 @@ mkDecimal (p, _, _, str) len =
         _          -> lexerError "Invalid decimal"
   where
     str' = take len str
+
+-- | Return error for unknown escape sequence.
+unknownEscapeSequence :: Action
+unknownEscapeSequence (_, _, _, str) len =
+    lexerError $ "Unknown escape sequence '" ++ take len str ++ "'"
+
+-- | Return error for invalid multiline string literal.
+invalidMultilineString :: Action
+invalidMultilineString _ _ = lexerError "Invalid multiline string literal"
 
 -- | EOF lexeme needed by Alex.
 alexEOF :: Alex [Lexeme]
