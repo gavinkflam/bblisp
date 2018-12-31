@@ -14,27 +14,27 @@ spec :: Spec
 spec =
     describe "runLexer" $ do
         it "tokenizes sample template containing all tokens" $
-            tokensOf (runLexer template1) `shouldBe` tokens1
+            tokensOf (runLexer tokensTest) `shouldBe` tokensTestTokens
         it "returns error for unclosed code block" $
-            runLexer errorTemplate1 `shouldBe` Left error1
+            runLexer unclosedTest1 `shouldBe` Left unclosedTestErr1
         it "returns error for unclosed comment block" $
-            runLexer errorTemplate2 `shouldBe` Left error2
+            runLexer unclosedTest2 `shouldBe` Left unclosedTestErr2
         it "returns error for unclosed section block" $
-            runLexer errorTemplate3 `shouldBe` Left error3
+            runLexer unclosedTest3 `shouldBe` Left unclosedTestErr3
         it "returns error for unclosed invert section block" $
-            runLexer errorTemplate4 `shouldBe` Left error4
+            runLexer unclosedTest4 `shouldBe` Left unclosedTestErr4
         it "returns error for unmatched closing section tag" $
-            runLexer errorTemplate5 `shouldBe` Left error5
+            runLexer unmatchedTest1 `shouldBe` Left unmatchedTestErr1
         it "returns error for unmatched closing invert section tag" $
-            runLexer errorTemplate6 `shouldBe` Left error6
+            runLexer unmatchedTest2 `shouldBe` Left unmatchedTestErr2
         it "returns error for unmatched nested closing section tag" $
-            runLexer errorTemplate7 `shouldBe` Left error7
+            runLexer unmatchedTest3 `shouldBe` Left unmatchedTestErr3
         it "returns error in the middle of line" $
-            runLexer errorTemplate8 `shouldBe` Left error8
+            runLexer locationTest1 `shouldBe` Left locationTestErr1
         it "returns error before end of line" $
-            runLexer errorTemplate9 `shouldBe` Left error9
+            runLexer locationTest2 `shouldBe` Left locationTestErr2
         it "returns error before end of file" $
-            runLexer errorTemplate10 `shouldBe` Left error10
+            runLexer locationTest3 `shouldBe` Left locationTestErr3
 
 -- | Extract tokens from lexemes.
 tokensOf :: Either String [Lexeme] -> [LexemeClass]
@@ -45,8 +45,8 @@ tokensOf (Right ls) =
     f (Lexeme _ l _) = l
 
 -- | Sample template containing all tokens.
-template1 :: String
-template1 = intercalate "\n"
+tokensTest :: String
+tokensTest = intercalate "\n"
     [ "{{# $name }}Hello {{ $name }}.{{/#}}"
     , "{{^ $name }}Hello world.{{/^}}"
     , "{{# $params }}{{# $$n }}{{ $$n }}{{/#}}{{^ $$n }}1{{/^}}{{/#}}"
@@ -55,9 +55,9 @@ template1 = intercalate "\n"
     , "First 10 digits of {{ \"pi\" }} is {{ 3.1415926535 }}."
     ]
 
--- | Expected tokens for `template1`.
-tokens1 :: [LexemeClass]
-tokens1 =
+-- | Expected tokens for `tokensTest`.
+tokensTestTokens :: [LexemeClass]
+tokensTestTokens =
     -- First line. Test for section block.
     [ LLMustachePound
     , LIdentifier "$name"
@@ -118,85 +118,86 @@ tokens1 =
     ]
 
 -- | Sample template with unclosed code block.
-errorTemplate1 :: String
-errorTemplate1 = "Hello {{ name"
+unclosedTest1 :: String
+unclosedTest1 = "Hello {{ name"
 
--- | Expected error for `errorTemplate1`.
-error1 :: String
-error1 = "Unclosed code block at end of file"
+-- | Expected error for `unclosedTest1`.
+unclosedTestErr1 :: String
+unclosedTestErr1 = "Unclosed code block at end of file"
 
 -- | Sample template with unclosed comment block.
-errorTemplate2 :: String
-errorTemplate2 = "Hello {{! insert name here"
+unclosedTest2 :: String
+unclosedTest2 = "Hello {{! insert name here"
 
--- | Expected error for `errorTemplate2`.
-error2 :: String
-error2 = "Unclosed comment block at end of file"
+-- | Expected error for `unclosedTest2`.
+unclosedTestErr2 :: String
+unclosedTestErr2 = "Unclosed comment block at end of file"
 
 -- | Sample template with unclosed section block.
-errorTemplate3 :: String
-errorTemplate3 = "Hello {{# name }}{{ name }}"
+unclosedTest3 :: String
+unclosedTest3 = "Hello {{# name }}{{ name }}"
 
--- | Expected error for `errorTemplate3`.
-error3 :: String
-error3 = "Unclosed section block at end of file"
+-- | Expected error for `unclosedTest3`.
+unclosedTestErr3 :: String
+unclosedTestErr3 = "Unclosed section block at end of file"
 
 -- | Sample template with unclosed invert section block.
-errorTemplate4 :: String
-errorTemplate4 = "Hello {{^ name }}world"
+unclosedTest4 :: String
+unclosedTest4 = "Hello {{^ name }}world"
 
--- | Expected error for `errorTemplate4`.
-error4 :: String
-error4 = "Unclosed invert section block at end of file"
+-- | Expected error for `unclosedTest4`.
+unclosedTestErr4 :: String
+unclosedTestErr4 = "Unclosed invert section block at end of file"
 
 -- | Sample template with unmatched closing section block.
-errorTemplate5 :: String
-errorTemplate5 = "Hello {{# name }}{{ name }}{{/^}}"
+unmatchedTest1 :: String
+unmatchedTest1 = "Hello {{# name }}{{ name }}{{/^}}"
 
--- | Expected error for `errorTemplate5`.
-error5 :: String
-error5 = "Unmatched closing tag {{/^}} at 1:34 before end of file"
+-- | Expected error for `unmatchedTest1`.
+unmatchedTestErr1 :: String
+unmatchedTestErr1 = "Unmatched closing tag {{/^}} at 1:34 before end of file"
 
 -- | Sample template with unmatched closing invert section block.
-errorTemplate6 :: String
-errorTemplate6 = "Hello {{^ name }}world{{/#}}"
+unmatchedTest2 :: String
+unmatchedTest2 = "Hello {{^ name }}world{{/#}}"
 
--- | Expected error for `errorTemplate6`.
-error6 :: String
-error6 = "Unmatched closing tag {{/#}} at 1:29 before end of file"
+-- | Expected error for `unmatchedTest2`.
+unmatchedTestErr2 :: String
+unmatchedTestErr2 = "Unmatched closing tag {{/#}} at 1:29 before end of file"
 
 -- | Sample template with unmatched nested closing section block.
-errorTemplate7 :: String
-errorTemplate7 = "Hello {{# name }}{{^ name }}world{{/#}}{{/^}}"
+unmatchedTest3 :: String
+unmatchedTest3 = "Hello {{# name }}{{^ name }}world{{/#}}{{/^}}"
 
--- | Expected error for `errorTemplate7`.
-error7 :: String
-error7 = "Unmatched closing tag {{/#}} at 1:40 on character '}' before `{{/^}}`"
+-- | Expected error for `unmatchedTest3`.
+unmatchedTestErr3 :: String
+unmatchedTestErr3 =
+    "Unmatched closing tag {{/#}} at 1:40 on character '}' before `{{/^}}`"
 
 -- | Sample template with error in the middle of line.
-errorTemplate8 :: String
-errorTemplate8 = "Hello {{^ name }}world{{/#}}. Goodbye."
+locationTest1 :: String
+locationTest1 = "Hello {{^ name }}world{{/#}}. Goodbye."
 
--- | Expected error for `errorTemplate8`.
-error8 :: String
-error8 =
+-- | Expected error for `locationTest1`.
+locationTestErr1 :: String
+locationTestErr1 =
     "Unmatched closing tag {{/#}} at 1:29 on character '}' before `. Goodbye.`"
 
 -- | Sample template with error before end of line.
-errorTemplate9 :: String
-errorTemplate9 = intercalate "\n"
+locationTest2 :: String
+locationTest2 = intercalate "\n"
     [ "Hello {{^ name }}world{{/#}}"
     , "and goodbye."
     ]
 
--- | Expected error for `errorTemplate9`.
-error9 :: String
-error9 = "Unmatched closing tag {{/#}} at 1:29 before end of line"
+-- | Expected error for `locationTest2`.
+locationTestErr2 :: String
+locationTestErr2 = "Unmatched closing tag {{/#}} at 1:29 before end of line"
 
 -- | Sample template with error before end of file.
-errorTemplate10 :: String
-errorTemplate10 = "Hello world{{/^}}"
+locationTest3 :: String
+locationTest3 = "Hello world{{/^}}"
 
--- | Expected error for `errorTemplate10`.
-error10 :: String
-error10 = "Unmatched closing tag {{/^}} at 1:18 before end of file"
+-- | Expected error for `locationTest3`.
+locationTestErr3 :: String
+locationTestErr3 = "Unmatched closing tag {{/^}} at 1:18 before end of file"
