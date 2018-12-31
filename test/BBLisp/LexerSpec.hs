@@ -15,6 +15,10 @@ spec =
     describe "runLexer" $ do
         it "tokenizes sample template containing all tokens" $
             tokensOf (runLexer tokensTest) `shouldBe` tokensTestTokens
+        it "returns error for unknown escape sequence in string literal" $
+            runLexer invalidStringTest1 `shouldBe` Left invalidStringTestErr1
+        it "returns error for invalid multiline string literal" $
+            runLexer invalidStringTest2 `shouldBe` Left invalidStringTestErr2
         it "returns error for unclosed code block" $
             runLexer unclosedTest1 `shouldBe` Left unclosedTestErr1
         it "returns error for unclosed comment block" $
@@ -118,6 +122,24 @@ tokensTestTokens =
     , LText "."
     , LEOF
     ]
+
+-- | Sample template with unknown escape sequence in string literal.
+invalidStringTest1 :: String
+invalidStringTest1 = "Hello {{ \"world\\i\" }}"
+
+-- | Expected error for `invalidStringTest1`.
+invalidStringTestErr1 :: String
+invalidStringTestErr1 =
+    "Unknown escape sequence '\\i' at 1:18 on character 'i' before `\" }}`"
+
+-- | Sample template with invalid multiline string literal.
+invalidStringTest2 :: String
+invalidStringTest2 = "Hello {{ \"worl\nd\" }}"
+
+-- | Expected error for `invalidStringTest2`.
+invalidStringTestErr2 :: String
+invalidStringTestErr2 =
+    "Invalid multiline string literal at 2:1 on character '\\n' before `d\" }}`"
 
 -- | Sample template with unclosed code block.
 unclosedTest1 :: String
