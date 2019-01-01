@@ -7,7 +7,6 @@ module BBLisp.Lexer
     (
       -- * Types
       Lexeme(..)
-    , LexemeClass(..)
       -- * Monads
     , AlexUserState
       -- * Lexing
@@ -20,7 +19,8 @@ import Numeric (readDec)
 
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Scientific (Scientific)
+
+import BBLisp.LexemeClass (LexemeClass(..))
 }
 
 %wrapper "monadUserState"
@@ -80,25 +80,6 @@ type Pos    = Maybe AlexPosn
 -- | Lexeme containing the position, token and text.
 data Lexeme =
     Lexeme AlexPosn LexemeClass (Maybe String)
-    deriving (Eq, Show)
-
--- | Lexeme tokens.
-data LexemeClass
-    = LEOF
-    | LLMustache
-    | LLMustachePound
-    | LLMustacheCaret
-    | LRMustache
-    | LCloseMustachePound
-    | LCloseMustacheCaret
-    | LLParen
-    | LRParen
-    | LText       String
-    | LIdentifier String
-    | LString     String
-    | LBoolean    Bool
-    | LInteger    Integer
-    | LDecimal    Scientific
     deriving (Eq, Show)
 
 -- | Possible lexer states.

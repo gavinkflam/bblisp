@@ -6,7 +6,8 @@ module BBLisp.LexerSpec
 
 import Data.List (intercalate)
 
-import BBLisp.Lexer (Lexeme(..), LexemeClass(..), runLexer)
+import BBLisp.LexemeClass (LexemeClass(..))
+import BBLisp.Lexer (Lexeme(..), runLexer)
 import Test.Hspec
 
 -- | Spec for `Lexer`.
