@@ -41,7 +41,7 @@ Template
 
 TemplateList
     : Template                                { $1 }
-    | TemplateList Template                   { Template ($2 : $1) }
+    | TemplateList Template                   { mkTemplate $1 $2 }
 
 Datum
     : integer                                 { Integer $1 }
@@ -55,11 +55,21 @@ Element
 
 List
     : Element                                 { $1 }
-    | List Element                            { List ($2 : $1) }
+    | List Element                            { mkList $1 $2 }
 {
 -- | Wrapper of lexer.
 lexer :: (Lexeme -> Alex a) -> Alex a
 lexer f = last <$> (mapM f =<< alexMonadScan)
+
+-- | Join parallel template elements into template.
+mkTemplate :: TemplateClass -> TemplateClass -> TemplateClass
+mkTemplate (Template ts) t = Template (t : ts)
+mkTemplate t1 t2           = Template [t2, t1]
+
+-- | Join parallel datum into list.
+mkList :: Datum -> Datum -> Datum
+mkList (List ds) d = List (d : ds)
+mkList d1 d2       = List [d2, d1]
 
 -- | Produce a parser error with readable error message and location
 --   information.
