@@ -9,7 +9,11 @@ module BBLisp.Lexer
       Lexeme(..)
       -- * Monads
     , AlexUserState
+    , Alex
       -- * Lexing
+    , alexError
+    , alexMonadScan
+    , runAlex
     , runLexer
     ) where
 
