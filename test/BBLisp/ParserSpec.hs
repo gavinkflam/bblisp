@@ -6,8 +6,8 @@ module BBLisp.ParserSpec
 
 import Data.List (intercalate)
 
-import BBLisp.SyntaxTree (Datum(..), TemplateClass(..))
 import BBLisp.Parser (runParser)
+import BBLisp.SyntaxTree (Datum(..), TemplateClass(..))
 import Test.Hspec
 
 -- | Spec for `Parser`.
