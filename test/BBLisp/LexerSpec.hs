@@ -7,7 +7,7 @@ module BBLisp.LexerSpec
 import Data.List (intercalate)
 
 import BBLisp.LexemeClass (LexemeClass(..))
-import BBLisp.Lexer (Lexeme(..), runLexer)
+import BBLisp.Lexer (Lexeme(..), alexMonadScan', runAlex)
 import Test.Hspec
 
 -- | Spec for `Lexer`.
@@ -42,6 +42,22 @@ spec =
             runLexer locationTest2 `shouldBe` Left locationTestErr2
         it "returns error before end of file" $
             runLexer locationTest3 `shouldBe` Left locationTestErr3
+
+-- | Run the lexer to collect lexemes.
+runLexer :: String -> Either String [Lexeme]
+runLexer =
+    flip runAlex $ collectWhileM notEof alexMonadScan'
+  where
+    notEof (Lexeme _ LEOF _) = False
+    notEof _                 = True
+
+-- | Collect the results of the monadic function `fM` until a result satisfy
+--   the predicate `p`.
+collectWhileM :: Monad m => (a -> Bool) -> m a -> m [a]
+collectWhileM p fM =
+    reverse <$> loopM []
+  where
+    loopM xs = fM >>= (\y -> if p y then loopM (y:xs) else return $ y:xs)
 
 -- | Extract tokens from lexemes.
 tokensOf :: Either String [Lexeme] -> [LexemeClass]

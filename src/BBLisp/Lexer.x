@@ -11,10 +11,9 @@ module BBLisp.Lexer
     , AlexUserState
     , Alex
       -- * Lexing
-    , alexError
-    , alexMonadScan
+    , alexError'
+    , alexMonadScan'
     , runAlex
-    , runLexer
     ) where
 
 import Data.Char (isSpace)
@@ -30,6 +29,8 @@ import BBLisp.LexemeClass (LexemeClass(..))
 %wrapper "monadUserState"
 
 $whitespace        = [\ \t\b]
+$textchar          = [$printable $white] # \{
+
 $digit             = 0-9
 $alpha             = [a-zA-Z]
 $specialinitial    = [\$\%\&\*\+\-\:\<\=\>\?\_\~]
@@ -37,6 +38,8 @@ $specialsubsequent = [\!\$\%\&\*\+\-\.\/\:\<\=\>\?\@\^\_\~]
 
 $initial           = [$alpha $specialinitial]
 $subsequent        = [$alpha $digit $specialsubsequent]
+
+@text              = $textchar+
 
 @identifier        = $initial$subsequent*
 @integer           = $digit+
@@ -50,8 +53,7 @@ state :-
 <0>       "{{/#}}"      { closeMustache LCloseMustachePound }
 <0>       "{{/^}}"      { closeMustache LCloseMustacheCaret }
 <0>       "{{"          { enterLisp LLMustache `andBegin` lisp }
-<0>       .             { addToText }
-<0>       \n            { addCharToText '\n' }
+<0>       @text         { addToText }
 <comment> "}}"          { leaveComment `andBegin` template }
 <comment> .             ;
 <comment> \n            { skip }
@@ -76,7 +78,7 @@ state :-
 
 {
 -- | Lexer action type.
-type Action = AlexInput -> Int -> Alex [Lexeme]
+type Action = AlexInput -> Int -> Alex Lexeme
 
 -- | Optional position information.
 type Pos    = Maybe AlexPosn
@@ -140,12 +142,12 @@ getLexerTextValue :: Alex String
 getLexerTextValue = Alex $ \s@AlexState{ alex_ust = ust } ->
     Right (s, lexerTextValue ust)
 
--- | Add the character to text value.
-addCharToLexerTextValue :: Char -> Alex ()
-addCharToLexerTextValue c = Alex $ \s ->
+-- | Add the string to text value.
+addStrToLexerTextValue :: String -> Alex ()
+addStrToLexerTextValue str = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerTextValue = newVal s } }, ())
   where
-    newVal s = c : lexerTextValue (alex_ust s)
+    newVal s = lexerTextValue (alex_ust s) ++ str
 
 -- | Clear text value.
 clearLexerTextValue :: Alex ()
@@ -194,18 +196,17 @@ pushLexerMustacheStack l = Alex $ \s@AlexState{ alex_ust = ust } ->
 
 -- | Enter comment state.
 enterComment :: Action
-enterComment _ _ = setLexerState SComment >> alexMonadScan
+enterComment _ _ = setLexerState SComment >> alexMonadScan'
 
 -- | Leave comment state.
 leaveComment :: Action
-leaveComment _ _ = setLexerState STemplate >> alexMonadScan
+leaveComment _ _ = setLexerState STemplate >> alexMonadScan'
 
 -- | Common action for entering lisp state.
 --
 --   Text lexeme should be added if applicable.
 enterLispCommon :: LexemeClass -> Action
-enterLispCommon l input len =
-    setLexerState SLisp >> mkTextEndingLexeme l input len
+enterLispCommon l input len = setLexerState SLisp >> mkL l input len
 
 -- | Enter lisp state.
 enterLisp :: LexemeClass -> Action
@@ -218,7 +219,7 @@ enterLisp l _ _ = error $ "Invalid call to enterLisp: " ++ show l
 
 -- | Enter string state.
 enterString :: Action
-enterString _ _ = setLexerState SString >> alexMonadScan
+enterString _ _ = setLexerState SString >> alexMonadScan'
 
 -- | Leave string state.
 leaveString :: Action
@@ -237,8 +238,8 @@ closeMustacheCommon :: LexemeClass -> LexemeClass -> Action
 closeMustacheCommon expect l input len = do
     top <- peekLexerMustacheStack
     if top == Just expect
-        then popLexerMustacheStack >> mkTextEndingLexeme l input len
-        else lexerError $ "Unmatched closing tag " ++ showTag l
+        then popLexerMustacheStack >> mkL l input len
+        else alexError' $ "Unmatched closing tag " ++ showTag l
   where
     showTag LCloseMustachePound = "{{/#}}"
     showTag LCloseMustacheCaret = "{{/^}}"
@@ -257,18 +258,25 @@ leaveLisp :: LexemeClass -> Action
 leaveLisp l@LRMustache input len = setLexerState STemplate >> mkL l input len
 leaveLisp l _ _ = error $ "Invalid call to leaveLisp: " ++ show l
 
--- | Add character to text value.
-addCharToText :: Char -> Action
-addCharToText c _ _ = addCharToLexerTextValue c >> alexMonadScan
-
 -- | Add the current character to text value store.
+--
+--   Make the text lexeme if the following characters will end the text block.
 addToText :: Action
-addToText i@(_, _, _, c:_) 1 = addCharToText c i 1
-addToText _ _                = error "Invalid call to addToText"
+addToText (p, _, _, str) len = do
+    addStrToLexerTextValue $ take len str
+    if isEndOfText $ drop len str
+        then getAndClearLexerTextValue >>= return . mkText
+        else alexMonadScan'
+  where
+    mkText s = Lexeme p (LText s) $ Just s
+    getAndClearLexerTextValue = do
+        s <- getLexerTextValue
+        clearLexerTextValue
+        return s
 
 -- | Add character to string value.
 addCharToString :: Char -> Action
-addCharToString c _ _ = addCharToLexerStringValue c >> alexMonadScan
+addCharToString c _ _ = addCharToLexerStringValue c >> alexMonadScan'
 
 -- | Add the current character to string value store.
 addToString :: Action
@@ -277,31 +285,12 @@ addToString _ _                = error "Invalid call to addToString"
 
 -- | Make lexeme from lexeme class.
 mkL :: LexemeClass -> Action
-mkL l (p, _, _, str) len = return [Lexeme p l $ Just $ take len str]
-
--- | Make the text lexeme if there is any string in text value.
-mkTextMaybe :: AlexInput -> Int -> Alex (Maybe Lexeme)
-mkTextMaybe (p, _, _, str) len = do
-    s <- getLexerTextValue
-    case s of
-        "" -> return Nothing
-        _  -> return $ Just $ Lexeme p (LText $ reverse s) $ Just $ take len str
-
--- | Make lexeme from lexeme class.
---
---   Make the preceeding text lexeme and clear text value as well if applicable.
-mkTextEndingLexeme :: LexemeClass -> Action
-mkTextEndingLexeme l input len = do
-    lLex <- mkL l input len
-    text <- mkTextMaybe input len
-    case text of
-        Nothing -> return lLex
-        Just t  -> clearLexerTextValue >> return (t:lLex)
+mkL l (p, _, _, str) len = return $ Lexeme p l $ Just $ take len str
 
 -- | Read and make identifier lexeme.
 mkIdentifier :: Action
 mkIdentifier (p, _, _, str) len =
-    return [Lexeme p (LIdentifier str') $ Just str']
+    return $ Lexeme p (LIdentifier str') $ Just str'
   where
     str' = take len str
 
@@ -309,8 +298,8 @@ mkIdentifier (p, _, _, str) len =
 mkInteger :: Action
 mkInteger (p, _, _, str) len =
     case readDec str' of
-        [(val, _)] -> return [Lexeme p (LInteger val) $ Just str']
-        _          -> lexerError "Invalid integer"
+        [(val, _)] -> return $ Lexeme p (LInteger val) $ Just str'
+        _          -> alexError' "Invalid integer"
   where
     str' = take len str
 
@@ -318,23 +307,50 @@ mkInteger (p, _, _, str) len =
 mkDecimal :: Action
 mkDecimal (p, _, _, str) len =
     case reads str' of
-        [(val, _)] -> return [Lexeme p (LDecimal val) $ Just str']
-        _          -> lexerError "Invalid decimal"
+        [(val, _)] -> return $ Lexeme p (LDecimal val) $ Just str'
+        _          -> alexError' "Invalid decimal"
   where
     str' = take len str
+
+-- | Returns the longest prefix of the list `xs` that satisfy the predicate `p`,
+--   plus the immediately next element if any.
+takeWhileAndOneMore :: (a -> Bool) -> [a] -> ([a], Maybe a)
+takeWhileAndOneMore p xs =
+    uncurry f $ span p xs
+  where
+    f ys []    = (ys, Nothing)
+    f ys (z:_) = (ys, Just z)
+
+-- | Peek input string to see if the upcoming sequence will end the text.
+--
+-- End of file or an unescaped '{{' sequence will end the text.
+--
+-- '{{|' is the escaped mustache sequence while '{{!' is comment open tag thus
+-- not ending the text.
+isEndOfText :: String -> Bool
+isEndOfText str =
+    nextIsEof str || nextIsLMustache str
+  where
+    nextIsEof s = null s
+    nextIsLMustache s =
+        case takeWhileAndOneMore (== '{') s of
+            ([],   _)        -> False
+            ("{{", Just '!') -> False
+            (_,    Just '|') -> False
+            (_,    _)        -> True
 
 -- | Return error for unknown escape sequence.
 unknownEscapeSequence :: Action
 unknownEscapeSequence (_, _, _, str) len =
-    lexerError $ "Unknown escape sequence '" ++ take len str ++ "'"
+    alexError' $ "Unknown escape sequence '" ++ take len str ++ "'"
 
 -- | Return error for invalid multiline string literal.
 invalidMultilineString :: Action
-invalidMultilineString _ _ = lexerError "Invalid multiline string literal"
+invalidMultilineString _ _ = alexError' "Invalid multiline string literal"
 
 -- | EOF lexeme needed by Alex.
-alexEOF :: Alex [Lexeme]
-alexEOF = return [Lexeme undefined LEOF Nothing]
+alexEOF :: Alex Lexeme
+alexEOF = return $ Lexeme undefined LEOF Nothing
 
 -- | Remove leading and trailing white space from a string.
 strip :: String -> String
@@ -345,8 +361,8 @@ showPosn :: AlexPosn -> String
 showPosn (AlexPn _ line col) = concat [show line, ":", show col]
 
 -- | Produce a lexer error with readable error message and location information.
-lexerError :: String -> Alex a
-lexerError msg = do
+alexError' :: String -> Alex a
+alexError' msg = do
     (p, c, _, str) <- alexGetInput
     alexError $ concat [msg, " at ", showPosn p, locationMsg c str]
   where
@@ -357,21 +373,27 @@ lexerError msg = do
             "" -> " before end of line"
             m  -> concat [" on character ", show c, " before `", m, "`"]
 
--- | Capture the error message to complement it with position information.
-alexComplementError :: Alex a -> Alex (a, Maybe String)
-alexComplementError (Alex al) =
-    Alex f
-  where
-    f s = case al s of
-        Left msg      -> Right (s, (undefined, Just msg))
-        Right (s', x) -> Right (s', (x, Nothing))
+-- | Modified `alexMonadScan` with state checking mechanism for end of file
+--   and better error message.
+alexMonadScan' :: Alex Lexeme
+alexMonadScan' = do
+    input <- alexGetInput
+    code  <- alexGetStartCode
+    case alexScan input code of
+        AlexEOF -> leaveLexer
+        AlexSkip input' _ -> alexSetInput input' >> alexMonadScan'
+        AlexToken input' len f ->
+            alexSetInput input' >> f (ignorePendingBytes input) len
+        AlexError (_, _, _, c:_) ->
+            alexError' $ "unexpected character '" ++ [c] ++ "'"
+        AlexError (_, _, _, _) -> alexError' "unexpected lexer error"
 
 -- | Finish lexing as EOF was encountered.
 --
 --   Make text lexeme or throw error for unfinished comment/lisp/string state
 --   or unclosed mustache tag.
-leaveLexer :: Lexeme -> Alex [Lexeme]
-leaveLexer eof@(Lexeme p _ str) =
+leaveLexer :: Alex Lexeme
+leaveLexer =
     leaveState =<< getLexerState
   where
     unclosedErr t = alexError $ "Unclosed " ++ t ++ " at end of file"
@@ -381,22 +403,6 @@ leaveLexer eof@(Lexeme p _ str) =
     leaveState STemplate = leaveTemplate =<< peekLexerMustacheStack
     leaveTemplate (Just LLMustachePound) = unclosedErr "section block"
     leaveTemplate (Just LLMustacheCaret) = unclosedErr "invert section block"
-    leaveTemplate (Just e)               = error $ "Invalid stack top" ++ show e
-    leaveTemplate Nothing                = do
-        s <- getLexerTextValue
-        case s of
-            "" -> return [eof]
-            _  -> return [Lexeme p (LText $ reverse s) str, eof]
-
--- | Run the lexer to produce lexemes.
-runLexer :: String -> Either String [Lexeme]
-runLexer str =
-    runAlex str go
-  where
-    go = do
-        (l, e) <- alexComplementError alexMonadScan
-        case (l, e) of
-            (_, Just err)               -> alexError err
-            ([l'@(Lexeme _ LEOF _)], _) -> leaveLexer l'
-            (_, _)                      -> (l++) <$> go
+    leaveTemplate (Just l) = error $ "Invalid mustache stack top " ++ show l
+    leaveTemplate Nothing  = alexEOF
 }

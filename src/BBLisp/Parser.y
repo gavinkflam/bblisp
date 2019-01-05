@@ -6,7 +6,7 @@ module BBLisp.Parser
     ) where
 
 import BBLisp.LexemeClass (LexemeClass(..))
-import BBLisp.Lexer (Alex, Lexeme(..), alexError, alexMonadScan, runAlex)
+import BBLisp.Lexer (Alex, Lexeme(..), alexError', alexMonadScan', runAlex)
 import BBLisp.SyntaxTree (Datum(..), TemplateClass(..))
 }
 
@@ -59,7 +59,7 @@ List
 {
 -- | Wrapper of lexer.
 lexer :: (Lexeme -> Alex a) -> Alex a
-lexer f = last <$> (mapM f =<< alexMonadScan)
+lexer = (alexMonadScan' >>=)
 
 -- | Join parallel template elements into template.
 mkTemplate :: TemplateClass -> TemplateClass -> TemplateClass
@@ -75,9 +75,9 @@ mkList d1 d2       = List [d2, d1]
 --   information.
 happyError :: Lexeme -> Alex a
 happyError (Lexeme _ l _) =
-    alexError $ "parse error at token'" ++ show l ++ "'"
+    alexError' $ "parse error at token'" ++ show l ++ "'"
 
 -- | Run the parser to produce syntax tree.
 runParser :: String -> Either String TemplateClass
-runParser str = runAlex str parse
+runParser = flip runAlex parse
 }
