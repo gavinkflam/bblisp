@@ -4,38 +4,27 @@ module BBLisp.ParserSpec
       spec
     ) where
 
-import Data.List (intercalate)
-
 import BBLisp.Parser (runParser)
 import BBLisp.SyntaxTree (Datum(..), TemplateClass(..))
 import Test.Hspec
+
+import Templates (sampleTemplate1)
 
 -- | Spec for `Parser`.
 spec :: Spec
 spec =
     describe "runParser" $
         it "parses sample template containing all syntax types" $
-            astOf (runParser genericTest) `shouldBe` genericTestTree
+            astOf (runParser sampleTemplate1) `shouldBe` sample1STree
 
 -- | Extract syntax tree from result.
 astOf :: Either String TemplateClass -> TemplateClass
 astOf (Left msg) = error $ "Parser error: " ++ msg
 astOf (Right t)  = t
 
--- | Sample template containing all syntax types.
-genericTest :: String
-genericTest = intercalate "\n"
-    [ "{{# $name }}Hello {{ $name }}.{{/#}}"
-    , "{{^ $name }}Hello world.{{/^}}"
-    , "{{# $params }}{{# $$n }}{{ $$n }}{{/#}}{{^ $$n }}1{{/^}}{{/#}}"
-    , "{{! I am invisible }}"
-    , "The answer is {{ + (- 50 20) 12 }}."
-    , "First 10 digits of {{ \"pi\" }} is {{ 3.1415926535 }}."
-    ]
-
--- | Expected syntax tree for `genericTest`.
-genericTestTree :: TemplateClass
-genericTestTree = Template
+-- | Expected syntax tree for `sampleTemplate1`.
+sample1STree :: TemplateClass
+sample1STree = Template
     -- First line. Test for section block.
     [ Section sName $ Template
         [ Text "Hello "
