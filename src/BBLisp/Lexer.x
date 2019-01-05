@@ -269,7 +269,7 @@ addToText :: Action
 addToText (p, _, _, str) len = do
     addStrToLexerTextValue $ take len str
     if isEndOfText $ drop len str
-        then getAndClearLexerTextValue >>= return . mkText
+        then mkText <$> getAndClearLexerTextValue
         else alexMonadScan'
   where
     mkText s = Lexeme p (LText s) $ Just s
@@ -335,7 +335,7 @@ isEndOfText :: String -> Bool
 isEndOfText str =
     nextIsEof str || nextIsLMustache str
   where
-    nextIsEof s = null s
+    nextIsEof = null
     nextIsLMustache s =
         case takeWhileAndOneMore (== '{') s of
             ([],   _)        -> False
