@@ -30,6 +30,8 @@ import BBLisp.LexemeClass (LexemeClass(..))
 
 $whitespace        = [\ \t\b]
 $textchar          = [$printable $white] # \{
+$commentchar       = [$printable $white] # \}
+$stringchar        = [$printable] # [\"\\]
 
 $digit             = 0-9
 $alpha             = [a-zA-Z]
@@ -40,6 +42,8 @@ $initial           = [$alpha $specialinitial]
 $subsequent        = [$alpha $digit $specialsubsequent]
 
 @text              = $textchar+
+@comment           = $commentchar+
+@string            = $stringchar+
 
 @identifier        = $initial$subsequent*
 @integer           = $digit+
@@ -55,8 +59,8 @@ state :-
 <0>       "{{"          { enterLisp LLMustache `andBegin` lisp }
 <0>       @text         { addToText }
 <comment> "}}"          { leaveComment `andBegin` template }
-<comment> .             ;
-<comment> \n            { skip }
+<comment> \}            ;
+<comment> @comment      ;
 <lisp>    \n            { skip }
 <lisp>    $whitespace+  ;
 <lisp>    @identifier   { mkIdentifier }
@@ -73,7 +77,7 @@ state :-
 <string>  \\\\          { addCharToString '\\' }
 <string>  \\.           { unknownEscapeSequence }
 <string>  \"            { leaveString `andBegin` lisp }
-<string>  .             { addToString }
+<string>  @string       { addToString }
 <string>  \n            { invalidMultilineString }
 
 {
@@ -159,12 +163,12 @@ getLexerStringValue :: Alex String
 getLexerStringValue = Alex $ \s@AlexState{ alex_ust = ust } ->
     Right (s, lexerStringValue ust)
 
--- | Add the character to string value.
-addCharToLexerStringValue :: Char -> Alex ()
-addCharToLexerStringValue c = Alex $ \s ->
+-- | Add the string to string value.
+addStrToLexerStringValue :: String -> Alex ()
+addStrToLexerStringValue str = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerStringValue = newVal s } }, ())
   where
-    newVal s = c : lexerStringValue (alex_ust s)
+    newVal s = lexerStringValue (alex_ust s) ++ str
 
 -- | Clear string value.
 clearLexerStringValue :: Alex ()
@@ -226,7 +230,7 @@ leaveString :: Action
 leaveString input len =
     setLexerState SLisp >> getLexerStringValue >>= mkString
   where
-    mkString s = mkL (LString $ reverse s) input len
+    mkString s = mkL (LString s) input len
 
 -- | Common action for closing mustache tags.
 --
@@ -276,12 +280,12 @@ addToText (p, _, _, str) len = do
 
 -- | Add character to string value.
 addCharToString :: Char -> Action
-addCharToString c _ _ = addCharToLexerStringValue c >> alexMonadScan'
+addCharToString c _ _ = addStrToLexerStringValue [c] >> alexMonadScan'
 
 -- | Add the current character to string value store.
 addToString :: Action
-addToString i@(_, _, _, c:_) 1 = addCharToString c i 1
-addToString _ _                = error "Invalid call to addToString"
+addToString (_, _, _, str) len =
+    addStrToLexerStringValue (take len str) >> alexMonadScan'
 
 -- | Make lexeme from lexeme class.
 mkL :: LexemeClass -> Action
