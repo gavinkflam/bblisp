@@ -53,9 +53,7 @@ state :-
 
 <0>       "{{!"         { enterComment `andBegin` comment }
 <0>       "{{#"         { enterLisp LLMustachePound `andBegin` lisp }
-<0>       "{{^"         { enterLisp LLMustacheCaret `andBegin` lisp }
-<0>       "{{/#}}"      { closeMustache LCloseMustachePound }
-<0>       "{{/^}}"      { closeMustache LCloseMustacheCaret }
+<0>       "{{/#}}"      { closeSectionBlock }
 <0>       "{{"          { enterLisp LLMustache `andBegin` lisp }
 <0>       @text         { addToText }
 <comment> "}}"          { leaveComment `andBegin` template }
@@ -108,7 +106,7 @@ data AlexUserState = AlexUserState
       lexerState         :: LexerState
     , lexerTextValue     :: String
     , lexerStringValue   :: String
-    , lexerMustacheStack :: [LexemeClass]
+    , lexerSectionDepth  :: Integer
       -- Used by parser phase
     , parserCollIdent    :: Map String Int
     , parserCurrentToken :: Lexeme
@@ -125,7 +123,7 @@ alexInitUserState = AlexUserState
     { lexerState         = STemplate
     , lexerTextValue     = ""
     , lexerStringValue   = ""
-    , lexerMustacheStack = []
+    , lexerSectionDepth  = 0
     , parserCollIdent    = Map.empty
     , parserCurrentToken = Lexeme undefined LEOF Nothing
     , parserPos          = Nothing
@@ -175,28 +173,17 @@ clearLexerStringValue :: Alex ()
 clearLexerStringValue = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerStringValue = "" } }, ())
 
--- | Get the top element of the mustache stack if any.
-peekLexerMustacheStack :: Alex (Maybe LexemeClass)
-peekLexerMustacheStack = Alex $ \s@AlexState{ alex_ust = ust } ->
-    case lexerMustacheStack ust of
-        []  -> Right (s, Nothing)
-        l:_ -> Right (s, Just l)
+-- | Get the current lexer section depth.
+getLexerSectionDepth :: Alex Integer
+getLexerSectionDepth = Alex $ \s@AlexState{ alex_ust = ust } ->
+    Right (s, lexerSectionDepth ust)
 
--- | Remove the top element of the mustache stack if any.
-popLexerMustacheStack :: Alex (Maybe LexemeClass)
-popLexerMustacheStack = Alex $ \s@AlexState{ alex_ust = ust } ->
-    case lexerMustacheStack ust of
-        []   -> Right (s, Nothing)
-        l:ls -> Right (fSetStack s ls, Just l)
+-- | Update the current lexer section depth with a function.
+updateLexerSectionDepth :: (Integer -> Integer) -> Alex ()
+updateLexerSectionDepth f = Alex $ \s ->
+    Right (s{ alex_ust=(alex_ust s){ lexerSectionDepth = newVal s } }, ())
   where
-    fSetStack s ls = s{ alex_ust=(alex_ust s){ lexerMustacheStack = ls } }
-
--- | Add an element to the top of the mustache stack.
-pushLexerMustacheStack :: LexemeClass -> Alex ()
-pushLexerMustacheStack l = Alex $ \s@AlexState{ alex_ust = ust } ->
-    Right (fSetStack s (l:lexerMustacheStack ust), ())
-  where
-    fSetStack s ls = s{ alex_ust=(alex_ust s){ lexerMustacheStack = ls } }
+    newVal s = f $ lexerSectionDepth $ alex_ust s
 
 -- | Enter comment state.
 enterComment :: Action
@@ -216,9 +203,7 @@ enterLispCommon l input len = setLexerState SLisp >> mkL l input len
 enterLisp :: LexemeClass -> Action
 enterLisp l@LLMustache input len = enterLispCommon l input len
 enterLisp l@LLMustachePound input len =
-    pushLexerMustacheStack LLMustachePound >> enterLispCommon l input len
-enterLisp l@LLMustacheCaret input len =
-    pushLexerMustacheStack LLMustacheCaret >> enterLispCommon l input len
+    updateLexerSectionDepth (flip (+) 1) >> enterLispCommon l input len
 enterLisp l _ _ = error $ "Invalid call to enterLisp: " ++ show l
 
 -- | Enter string state.
@@ -232,30 +217,15 @@ leaveString input len =
   where
     mkString s = mkL (LString s) input len
 
--- | Common action for closing mustache tags.
---
---   The closing tag should be checked against the mustache stack.
---
---   Text lexeme should be added if applicable.
---   Closing tag lexeme should be added as well.
-closeMustacheCommon :: LexemeClass -> LexemeClass -> Action
-closeMustacheCommon expect l input len = do
-    top <- peekLexerMustacheStack
-    if top == Just expect
-        then popLexerMustacheStack >> mkL l input len
-        else alexError' $ "Unmatched closing tag " ++ showTag l
+-- | Close section block.
+closeSectionBlock :: Action
+closeSectionBlock input len = do
+    depth <- getLexerSectionDepth
+    if depth > 0
+        then updateLexerSectionDepth (flip (-) 1) >> mkCloseMustachePound
+        else alexError' "No section block to close"
   where
-    showTag LCloseMustachePound = "{{/#}}"
-    showTag LCloseMustacheCaret = "{{/^}}"
-    showTag l'                  = error $ "Invalid call to showTag" ++ show l'
-
--- | Close mustache tag.
-closeMustache :: LexemeClass -> Action
-closeMustache l@LCloseMustachePound input len =
-    closeMustacheCommon LLMustachePound l input len
-closeMustache l@LCloseMustacheCaret input len =
-    closeMustacheCommon LLMustacheCaret l input len
-closeMustache l _ _ = error $ "Invalid call to closeMustache: " ++ show l
+    mkCloseMustachePound = mkL LCloseMustachePound input len
 
 -- | Leave lisp state.
 leaveLisp :: LexemeClass -> Action
@@ -404,9 +374,7 @@ leaveLexer =
     leaveState SComment  = unclosedErr "comment block"
     leaveState SLisp     = unclosedErr "code block"
     leaveState SString   = unclosedErr "string literal"
-    leaveState STemplate = leaveTemplate =<< peekLexerMustacheStack
-    leaveTemplate (Just LLMustachePound) = unclosedErr "section block"
-    leaveTemplate (Just LLMustacheCaret) = unclosedErr "invert section block"
-    leaveTemplate (Just l) = error $ "Invalid mustache stack top " ++ show l
-    leaveTemplate Nothing  = alexEOF
+    leaveState STemplate = leaveTemplate =<< getLexerSectionDepth
+    leaveTemplate 0 = alexEOF
+    leaveTemplate _ = unclosedErr "section block"
 }

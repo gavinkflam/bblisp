@@ -19,10 +19,8 @@ import BBLisp.SyntaxTree (List(..))
 %token
     '{{'      { Lexeme _ LLMustache _ }
     '{{#'     { Lexeme _ LLMustachePound _ }
-    '{{^'     { Lexeme _ LLMustacheCaret _ }
     '}}'      { Lexeme _ LRMustache _ }
     '{{/#}}'  { Lexeme _ LCloseMustachePound _ }
-    '{{/^}}'  { Lexeme _ LCloseMustacheCaret _ }
     '('       { Lexeme _ LLParen _ }
     ')'       { Lexeme _ LRParen _ }
     text      { Lexeme _ (LText $$) _ }

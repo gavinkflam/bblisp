@@ -11,10 +11,8 @@ data LexemeClass
     = LEOF
     | LLMustache
     | LLMustachePound
-    | LLMustacheCaret
     | LRMustache
     | LCloseMustachePound
-    | LCloseMustacheCaret
     | LLParen
     | LRParen
     | LText       String
