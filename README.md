@@ -1,8 +1,21 @@
 # bblisp
 
-Fast, safe and customizable template language.
+Hackable and side-effect free template language.
 
-Influenced by mustache, Lisp and BBCode.
+Influenced by Handlebars, Spacebars, LISP, Racket, Clojure and BBCode.
+
+## Example
+
+```
+Hello {{# if $name}}{{$name}}{{## else }}world{{/#}}.
+```
+
+## Goals
+
+* Forbid side-effects.
+* Able to customize the language with syntactic forms and functions.
+* Able to precompile templates for faster rendering.
+* Stay fast and minimal.
 
 ## Style Guide
 
