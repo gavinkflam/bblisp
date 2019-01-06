@@ -36,8 +36,8 @@ List
     | List List1                      { joinList $1 $2 }
 
 List1
-    : text                            { mkPrint $ String $1 }
-    | '{{' List '}}'                  { mkPrint $2 }
+    : text                            { mkRender $ String $1 }
+    | '{{' List '}}'                  { mkRender $2 }
     | '{{#' List '}}' List '{{/#}}'   { mkSection $2 $4 }
     | Literal                         { $1 }
     | '(' List ')'                    { $2 }
@@ -54,9 +54,9 @@ lexer = (alexMonadScan' >>=)
 
 -- | Join parallel list into a single list.
 joinList :: List -> List -> List
-joinList (List [Symbol "block", List l1]) l2 =
-    List [Symbol "block", List $ l1 ++ [l2]]
-joinList l1@(List _) l2@(List _) = List [Symbol "block", List [l1, l2]]
+joinList (List [Symbol "render-list", List l1]) l2 =
+    List [Symbol "render-list", List $ l1 ++ [l2]]
+joinList l1@(List _) l2@(List _) = List [Symbol "render-list", List [l1, l2]]
 joinList (List l1) l2            = List $ l1 ++ [l2]
 joinList l1 l2                   = List [l1, l2]
 
@@ -65,9 +65,9 @@ mkSection :: List -> List -> List
 mkSection (List l1) l2 = List $ l1 ++ [l2]
 mkSection l1 l2        = List [l1, l2]
 
--- | Make a list for print sequence.
-mkPrint :: List -> List
-mkPrint d = List [Symbol "print", d]
+-- | Make a list for render sequence.
+mkRender :: List -> List
+mkRender d = List [Symbol "render", d]
 
 -- | Produce a parser error with readable error message and location
 --   information.
