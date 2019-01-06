@@ -30,3 +30,10 @@ Hello {{# if $name}}{{$name}}{{## else }}world{{/#}}.
 ## License
 
 BSD3
+
+[hlint]: https://hackage.haskell.org/package/hlint
+[stylish-haskell]: https://hackage.haskell.org/package/stylish-haskell
+[haskell-style-guide]: https://github.com/tibbe/haskell-style-guide/blob/master/haskell-style.md
+[haskell-programming-tips]: https://wiki.haskell.org/Haskell_programming_tips
+[hlint-github]: https://github.com/ndmitchell/hlint
+[programming-guidelines]: https://wiki.haskell.org/Programming_guidelines
