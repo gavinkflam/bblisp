@@ -7,7 +7,7 @@ module BBLisp.Parser
 
 import BBLisp.LexemeClass (LexemeClass(..))
 import BBLisp.Lexer (Alex, Lexeme(..), alexError', alexMonadScan', runAlex)
-import BBLisp.SyntaxTree (Datum(..), TemplateClass(..))
+import BBLisp.SyntaxTree (List(..))
 }
 
 %name parse
@@ -33,25 +33,18 @@ import BBLisp.SyntaxTree (Datum(..), TemplateClass(..))
 
 %%
 
-Tmpl
-    : Tmpl1                           { $1 }
-    | Tmpl Tmpl1                      { mkTemplate $1 $2 }
-
-Tmpl1
-    : text                            { Text $1 }
-    | '{{' List '}}'                  { Print $2 }
-    | '{{#' List '}}' Tmpl '{{/#}}'   { Section $2 $4 }
-    | '{{^' List '}}' Tmpl '{{/^}}'   { InvertSection $2 $4 }
-
 List
-    : Element                         { $1 }
-    | List Element                    { mkList $1 $2 }
+    : List1                           { $1 }
+    | List List1                      { joinList $1 $2 }
 
-Element
-    : Datum                           { $1 }
+List1
+    : text                            { mkPrint $ String $1 }
+    | '{{' List '}}'                  { mkPrint $2 }
+    | '{{#' List '}}' List '{{/#}}'   { mkSection $2 $4 }
+    | Literal                         { $1 }
     | '(' List ')'                    { $2 }
 
-Datum
+Literal
     : integer                         { Integer $1 }
     | decimal                         { Decimal $1 }
     | string                          { String  $1 }
@@ -61,15 +54,22 @@ Datum
 lexer :: (Lexeme -> Alex a) -> Alex a
 lexer = (alexMonadScan' >>=)
 
--- | Join parallel template classes into template.
-mkTemplate :: TemplateClass -> TemplateClass -> TemplateClass
-mkTemplate (Template ts) t = Template $ ts ++ [t]
-mkTemplate t1 t2           = Template [t1, t2]
+-- | Join parallel list into a single list.
+joinList :: List -> List -> List
+joinList (List [Symbol "block", List l1]) l2 =
+    List [Symbol "block", List $ l1 ++ [l2]]
+joinList l1@(List _) l2@(List _) = List $ [Symbol "block", List [l1, l2]]
+joinList (List l1) l2            = List $ l1 ++ [l2]
+joinList l1 l2                   = List $ [l1, l2]
 
--- | Join parallel datum into list.
-mkList :: Datum -> Datum -> Datum
-mkList (List ds) d = List $ ds ++ [d]
-mkList d1 d2       = List [d1, d2]
+-- | Make a list for section sequence.
+mkSection :: List -> List -> List
+mkSection (List l1) l2 = List $ l1 ++ [l2]
+mkSection l1 l2        = List [l1, l2]
+
+-- | Make a list for print sequence.
+mkPrint :: List -> List
+mkPrint d = List $ [Symbol "print", d]
 
 -- | Produce a parser error with readable error message and location
 --   information.
@@ -78,6 +78,6 @@ happyError (Lexeme _ l _) =
     alexError' $ "parse error at token '" ++ show l ++ "'"
 
 -- | Run the parser to produce syntax tree.
-runParser :: String -> Either String TemplateClass
+runParser :: String -> Either String List
 runParser = flip runAlex parse
 }

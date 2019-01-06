@@ -1,25 +1,16 @@
 module BBLisp.SyntaxTree
     (
       -- * Types
-      TemplateClass(..)
-    , Datum(..)
+      List(..)
     ) where
 
 import Data.Scientific (Scientific)
 
-data TemplateClass
-    = Text          String
-    | Print         Datum
-    | Section       Datum TemplateClass
-    | InvertSection Datum TemplateClass
-    | Template      [TemplateClass]
-    deriving (Eq, Show)
-
-data Datum
+data List
     = Boolean Bool
     | Integer Integer
     | Decimal Scientific
     | String  String
     | Symbol  String
-    | List    [Datum]
+    | List    [List]
     deriving (Eq, Show)

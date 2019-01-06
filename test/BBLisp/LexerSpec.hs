@@ -74,6 +74,7 @@ sample1Tokens :: [LexemeClass]
 sample1Tokens =
     -- First line. Test for section block.
     [ LLMustachePound
+    , LIdentifier "if"
     , LIdentifier "$name"
     , LRMustache
     , LText "Hello "
@@ -84,28 +85,32 @@ sample1Tokens =
     , LCloseMustachePound
     -- Second line. Test for invert section block.
     , LText "\n"
-    , LLMustacheCaret
+    , LLMustachePound
+    , LIdentifier "unless"
     , LIdentifier "$name"
     , LRMustache
     , LText "Hello world."
-    , LCloseMustacheCaret
+    , LCloseMustachePound
     -- Third line. Test for nested section blocks.
     , LText "\n"
     , LLMustachePound
+    , LIdentifier "with"
     , LIdentifier "$params"
     , LRMustache
     , LLMustachePound
+    , LIdentifier "if"
     , LIdentifier "$$n"
     , LRMustache
     , LLMustache
     , LIdentifier "$$n"
     , LRMustache
     , LCloseMustachePound
-    , LLMustacheCaret
+    , LLMustachePound
+    , LIdentifier "unless"
     , LIdentifier "$$n"
     , LRMustache
     , LText "1"
-    , LCloseMustacheCaret
+    , LCloseMustachePound
     , LCloseMustachePound
     -- Fourth and fifth line. Test for comment, code block, parens and integer.
     , LText "\n\nThe answer is "
