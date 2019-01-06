@@ -144,34 +144,24 @@ getLexerTextValue :: Alex String
 getLexerTextValue = Alex $ \s@AlexState{ alex_ust = ust } ->
     Right (s, lexerTextValue ust)
 
--- | Add the string to text value.
-addStrToLexerTextValue :: String -> Alex ()
-addStrToLexerTextValue str = Alex $ \s ->
+-- | Update the text value with a function.
+updateLexerTextValue :: (String -> String) -> Alex ()
+updateLexerTextValue f = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerTextValue = newVal s } }, ())
   where
-    newVal s = lexerTextValue (alex_ust s) ++ str
-
--- | Clear text value.
-clearLexerTextValue :: Alex ()
-clearLexerTextValue = Alex $ \s ->
-    Right (s{ alex_ust=(alex_ust s){ lexerTextValue = "" } }, ())
+    newVal s = f $ lexerTextValue $ alex_ust s
 
 -- | Get the string value.
 getLexerStringValue :: Alex String
 getLexerStringValue = Alex $ \s@AlexState{ alex_ust = ust } ->
     Right (s, lexerStringValue ust)
 
--- | Add the string to string value.
-addStrToLexerStringValue :: String -> Alex ()
-addStrToLexerStringValue str = Alex $ \s ->
+-- | Update the string value with a function.
+updateLexerStringValue :: (String -> String) -> Alex ()
+updateLexerStringValue f = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerStringValue = newVal s } }, ())
   where
-    newVal s = lexerStringValue (alex_ust s) ++ str
-
--- | Clear string value.
-clearLexerStringValue :: Alex ()
-clearLexerStringValue = Alex $ \s ->
-    Right (s{ alex_ust=(alex_ust s){ lexerStringValue = "" } }, ())
+    newVal s = f $ lexerStringValue $ alex_ust s
 
 -- | Get the current lexer section depth.
 getLexerSectionDepth :: Alex Integer
@@ -237,7 +227,7 @@ leaveLisp l _ _ = error $ "Invalid call to leaveLisp: " ++ show l
 --   Make the text lexeme if the following characters will end the text block.
 addToText :: Action
 addToText (p, _, _, str) len = do
-    addStrToLexerTextValue $ take len str
+    updateLexerTextValue $ flip (++) $ take len str
     if isEndOfText $ drop len str
         then mkText <$> getAndClearLexerTextValue
         else alexMonadScan'
@@ -245,17 +235,17 @@ addToText (p, _, _, str) len = do
     mkText s = Lexeme p (LText s) $ Just s
     getAndClearLexerTextValue = do
         s <- getLexerTextValue
-        clearLexerTextValue
+        updateLexerTextValue $ const ""
         return s
 
 -- | Add character to string value.
 addCharToString :: Char -> Action
-addCharToString c _ _ = addStrToLexerStringValue [c] >> alexMonadScan'
+addCharToString c _ _ = updateLexerStringValue (flip (++) [c]) >> alexMonadScan'
 
 -- | Add the current character to string value store.
 addToString :: Action
 addToString (_, _, _, str) len =
-    addStrToLexerStringValue (take len str) >> alexMonadScan'
+    updateLexerStringValue (flip (++) $ take len str) >> alexMonadScan'
 
 -- | Make lexeme from lexeme class.
 mkL :: LexemeClass -> Action
