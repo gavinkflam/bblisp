@@ -56,9 +56,9 @@ lexer = (alexMonadScan' >>=)
 joinList :: List -> List -> List
 joinList (List [Symbol "block", List l1]) l2 =
     List [Symbol "block", List $ l1 ++ [l2]]
-joinList l1@(List _) l2@(List _) = List $ [Symbol "block", List [l1, l2]]
+joinList l1@(List _) l2@(List _) = List [Symbol "block", List [l1, l2]]
 joinList (List l1) l2            = List $ l1 ++ [l2]
-joinList l1 l2                   = List $ [l1, l2]
+joinList l1 l2                   = List [l1, l2]
 
 -- | Make a list for section sequence.
 mkSection :: List -> List -> List
@@ -67,7 +67,7 @@ mkSection l1 l2        = List [l1, l2]
 
 -- | Make a list for print sequence.
 mkPrint :: List -> List
-mkPrint d = List $ [Symbol "print", d]
+mkPrint d = List [Symbol "print", d]
 
 -- | Produce a parser error with readable error message and location
 --   information.

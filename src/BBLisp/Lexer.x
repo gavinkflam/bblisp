@@ -193,7 +193,7 @@ enterLispCommon l input len = setLexerState SLisp >> mkL l input len
 enterLisp :: LexemeClass -> Action
 enterLisp l@LLMustache input len = enterLispCommon l input len
 enterLisp l@LLMustachePound input len =
-    updateLexerSectionDepth (flip (+) 1) >> enterLispCommon l input len
+    updateLexerSectionDepth (+ 1) >> enterLispCommon l input len
 enterLisp l _ _ = error $ "Invalid call to enterLisp: " ++ show l
 
 -- | Enter string state.
@@ -227,7 +227,7 @@ leaveLisp l _ _ = error $ "Invalid call to leaveLisp: " ++ show l
 --   Make the text lexeme if the following characters will end the text block.
 addToText :: Action
 addToText (p, _, _, str) len = do
-    updateLexerTextValue $ flip (++) $ take len str
+    updateLexerTextValue (++ take len str)
     if isEndOfText $ drop len str
         then mkText <$> getAndClearLexerTextValue
         else alexMonadScan'
@@ -240,12 +240,12 @@ addToText (p, _, _, str) len = do
 
 -- | Add character to string value.
 addCharToString :: Char -> Action
-addCharToString c _ _ = updateLexerStringValue (flip (++) [c]) >> alexMonadScan'
+addCharToString c _ _ = updateLexerStringValue (++ [c]) >> alexMonadScan'
 
 -- | Add the current character to string value store.
 addToString :: Action
 addToString (_, _, _, str) len =
-    updateLexerStringValue (flip (++) $ take len str) >> alexMonadScan'
+    updateLexerStringValue (++ take len str) >> alexMonadScan'
 
 -- | Make lexeme from lexeme class.
 mkL :: LexemeClass -> Action
