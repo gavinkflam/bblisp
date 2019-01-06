@@ -13,9 +13,9 @@ Hello {{# if $name}}{{$name}}{{## else }}world{{/#}}.
 ## Goals
 
 * Forbid side-effects.
+* Lightning fast and minimal.
 * Able to customize the language with syntactic forms and functions.
-* Able to precompile templates for faster rendering.
-* Stay fast and minimal.
+* Able to precompile templates for even faster rendering.
 
 ## Style Guide
 
