@@ -27,7 +27,7 @@ sample1STree :: List
 sample1STree = List
     [ Symbol "block"
     , List
-        -- First line. Test for section block.
+        -- First line. Test for section block with tags.
         [ List
             [ Symbol "if"
             , Symbol "$name"
@@ -49,7 +49,7 @@ sample1STree = List
                     ]
                 ]
             ]
-        -- Second line. Test for invert section block.
+        -- Second line. Test for simple section block.
         , List
             [ Symbol "print"
             , String "\n"
@@ -92,7 +92,8 @@ sample1STree = List
                     ]
                 ]
             ]
-        -- Fourth and fifth line. Test for comment, code block, parens and integer.
+        -- Fourth and fifth line.
+        -- Test for comment, code block, parens and integer.
         , List
             [ Symbol "print"
             , String "\n\nThe answer is "
