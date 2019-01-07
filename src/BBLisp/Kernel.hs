@@ -3,7 +3,7 @@ module BBLisp.Kernel
       -- * Syntactic Forms
       eval
       -- * Functions
-    , render
+    , str
       -- * Primitives
     , primitives
     ) where
@@ -27,7 +27,7 @@ eval b (List (Primitive (Syntax _ f) : ls))   =
 eval b (List (Primitive (Function _ f) : ls)) =
     case map snd <$> mapM (eval b) ls of
         Left err -> Left err
-        Right vs -> (,) b <$> f b (List vs)
+        Right vs -> (,) b <$> f (List vs)
 eval b v@(Boolean _) = Right (b, v)
 eval b v@(Integer _) = Right (b, v)
 eval b v@(Decimal _) = Right (b, v)
@@ -38,15 +38,28 @@ eval b (Symbol name) =
         Just v  -> Right (b, v)
 eval _ l = Left $ "Unexpected form: " ++ show l
 
--- | Render a literal as string.
-render :: Function
-render _ (List [s@(String _)]) = Right s
-render _ (List [Integer i])    = Right $ String $ show i
-render _ l                     = Left $ "Unexpected form: " ++ show l
+-- | With one argument, returns the string representation of `v`.
+--
+--   With more than one argument, returns the concatenation of the string
+--   representation of `vs`.
+str :: Function
+str (List [Boolean True])  = Right $ String "true"
+str (List [Boolean False]) = Right $ String "false"
+str (List [Integer v])     = Right $ String $ show v
+str (List [Decimal v])     = Right $ String $ show v
+str (List [s@(String _)])  = Right s
+str (List [Symbol v])      = Right $ String v
+str (List [Primitive (Syntax   name _)]) = Right $ String name
+str (List [Primitive (Function name _)]) = Right $ String name
+str (List vs) =
+    String . concat . fStrs <$> mapM (str . List . (:[])) vs
+  where
+    fStrs ls = [ s | String s <- ls ]
+str l = Left $ "Unexpected form: " ++ show l
 
 -- | Binding of all primitives in the module.
 primitives :: Binding
 primitives = Map.fromList
-    [ ("eval",    Primitive $ Syntax "eval" eval)
-    , ("render",  Primitive $ Function "render" render)
+    [ ("eval",        Primitive $ Syntax "eval" eval)
+    , ("str",         Primitive $ Function "str" str)
     ]
