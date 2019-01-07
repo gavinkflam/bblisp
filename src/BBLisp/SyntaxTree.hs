@@ -18,7 +18,7 @@ type Binding = Map String List
 type Syntax   = Binding -> List -> Either String (Binding, List)
 
 -- | Signature for pure function.
-type Function = Binding -> List -> Either String List
+type Function = List -> Either String List
 
 -- | Recursive list structure to store code and data.
 data List
@@ -33,7 +33,7 @@ data List
 
 -- | Primitive syntactic form and pure function.
 data Primitive
-    = Syntax   String Syntax 
+    = Syntax   String Syntax
     | Function String Function
 
 instance Eq Primitive where
