@@ -2,6 +2,7 @@ module BBLisp.Kernel
     (
       -- * Syntactic Forms
       eval
+    , if'
       -- * Functions
     , str
       -- * Primitives
@@ -38,6 +39,22 @@ eval b (Symbol name) =
         Just v  -> Right (b, v)
 eval _ l = Left $ "Unexpected form: " ++ show l
 
+-- | Evaluates `test`.
+--
+--   If it produces any value other than `false`, evaluate `then` and returns
+--   the result.
+--
+--   Otherwise, evaluate `else` and returns the result, or returns `nil` when
+--   there are no `else`.
+if' :: Syntax
+if' b (List [test, then', else']) =
+    case eval b test of
+        Left  err                -> Left err
+        Right (_, Boolean False) -> eval b else'
+        Right _                  -> eval b then'
+if' _ l = Left $ "Unexpected form: " ++ show l
+-- ^ TODO: Recursively define pattern without `else` after adding `nil`.
+
 -- | With one argument, returns the string representation of `v`.
 --
 --   With more than one argument, returns the concatenation of the string
@@ -61,5 +78,6 @@ str l = Left $ "Unexpected form: " ++ show l
 primitives :: Binding
 primitives = Map.fromList
     [ ("eval",        Primitive $ Syntax "eval" eval)
+    , ("if",          Primitive $ Syntax "if" if')
     , ("str",         Primitive $ Function "str" str)
     ]
