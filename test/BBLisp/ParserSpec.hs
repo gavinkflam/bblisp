@@ -25,25 +25,25 @@ astOf (Right t)  = t
 -- | Expected syntax tree for `sampleTemplate1`.
 sample1STree :: List
 sample1STree = List
-    [ Symbol "render-list"
+    [ Symbol "str"
     , List
         -- First line. Test for section block with tags.
         [ List
             [ Symbol "if"
             , Symbol "$name"
             , List
-                [ Symbol "render-list"
+                [ Symbol "str"
                 , List
                     [ List
-                        [ Symbol "render"
+                        [ Symbol "str"
                         , String "Hello "
                         ]
                     , List
-                        [ Symbol "render"
+                        [ Symbol "str"
                         , Symbol "$name"
                         ]
                     , List
-                        [ Symbol "render"
+                        [ Symbol "str"
                         , String "."
                         ]
                     ]
@@ -51,33 +51,33 @@ sample1STree = List
             ]
         -- Second line. Test for simple section block.
         , List
-            [ Symbol "render"
+            [ Symbol "str"
             , String "\n"
             ]
         , List
             [ Symbol "unless"
             , Symbol "$name"
             , List
-                [ Symbol "render"
+                [ Symbol "str"
                 , String "Hello world."
                 ]
             ]
         -- Third line. Test for nested section blocks.
         , List
-            [ Symbol "render"
+            [ Symbol "str"
             , String "\n"
             ]
         , List
             [ Symbol "with"
             , Symbol "$params"
             , List
-                [ Symbol "render-list"
+                [ Symbol "str"
                 , List
                     [ List
                         [ Symbol "if"
                         , Symbol "$$n"
                         , List
-                            [ Symbol "render"
+                            [ Symbol "str"
                             , Symbol "$$n"
                             ]
                         ]
@@ -85,7 +85,7 @@ sample1STree = List
                         [ Symbol "unless"
                         , Symbol "$$n"
                         , List
-                            [ Symbol "render"
+                            [ Symbol "str"
                             , String "1"
                             ]
                         ]
@@ -95,11 +95,11 @@ sample1STree = List
         -- Fourth and fifth line.
         -- Test for comment, code block, parens and integer.
         , List
-            [ Symbol "render"
+            [ Symbol "str"
             , String "\n\nThe answer is "
             ]
         , List
-            [ Symbol "render"
+            [ Symbol "str"
             , List
                 [ Symbol "+"
                 , List
@@ -112,23 +112,23 @@ sample1STree = List
             ]
         -- Sixth line. Test for code block, string and decimal.
         , List
-            [ Symbol "render"
+            [ Symbol "str"
             , String ".\nFirst 10 digits of "
             ]
         , List
-            [ Symbol "render"
+            [ Symbol "str"
             , String "pi"
             ]
         , List
-            [ Symbol "render"
+            [ Symbol "str"
             , String " is "
             ]
         , List
-            [ Symbol "render"
+            [ Symbol "str"
             , Decimal $ read "3.1415926535"
             ]
         , List
-            [ Symbol "render"
+            [ Symbol "str"
             , String "."
             ]
         ]
