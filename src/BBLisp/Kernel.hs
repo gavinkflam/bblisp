@@ -12,7 +12,7 @@ module BBLisp.Kernel
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map
 
-import BBLisp.SyntaxTree (Binding, Function, List(..), Primitive(..), Syntax)
+import BBLisp.SyntaxTree (Bindings, Function, List(..), Primitive(..), Syntax)
 
 -- | Evaluate an expression or definition.
 eval :: Syntax
@@ -35,7 +35,7 @@ eval b v@(Decimal _) = Right (b, v)
 eval b v@(String _)  = Right (b, v)
 eval b (Symbol name) =
     case b !? name of
-        Nothing -> Left $ "Binding '" ++ name ++ "' not found"
+        Nothing -> Left $ "Binding for '" ++ name ++ "' not found"
         Just v  -> Right (b, v)
 eval _ l = Left $ "Unexpected form: " ++ show l
 
@@ -74,8 +74,8 @@ str (List vs) =
     fStrs ls = [ s | String s <- ls ]
 str l = Left $ "Unexpected form: " ++ show l
 
--- | Binding of all primitives in the module.
-primitives :: Binding
+-- | Bindings of all primitives in the module.
+primitives :: Bindings
 primitives = Map.fromList
     [ ("eval",        Primitive $ Syntax "eval" eval)
     , ("if",          Primitive $ Syntax "if" if')

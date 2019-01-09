@@ -1,7 +1,7 @@
 module BBLisp.SyntaxTree
     (
       -- * Types
-      Binding
+      Bindings
     , Syntax
     , Function
     , List(..)
@@ -11,11 +11,11 @@ module BBLisp.SyntaxTree
 import Data.Map.Strict (Map)
 import Data.Scientific (Scientific)
 
--- | Alias for name to list binding.
-type Binding = Map String List
+-- | Alias for name to list bindings.
+type Bindings = Map String List
 
 -- | Signature for syntactic form.
-type Syntax   = Binding -> List -> Either String (Binding, List)
+type Syntax   = Bindings -> List -> Either String (Bindings, List)
 
 -- | Signature for pure function.
 type Function = List -> Either String List
