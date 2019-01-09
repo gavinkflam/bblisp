@@ -31,15 +31,25 @@ import BBLisp.SyntaxTree (List(..))
 
 %%
 
+Tmp
+    : Tmp1                            { List [Symbol "str", $1] }
+    | Tmp Tmp1                        { appendList $1 $2 }
+
+STmp
+    : Tmp1                            { $1 }
+    | STmp Tmp1                       { appendSTmp $1 $2 }
+
+Tmp1
+    : text                            { String $1 }
+    | '{{' List '}}'                  { $2 }
+    | '{{#' List '}}' STmp '{{/#}}'   { appendList $2 $4 }
+
 List
     : List1                           { $1 }
-    | List List1                      { joinList $1 $2 }
+    | List List1                      { appendList $1 $2 }
 
 List1
-    : text                            { mkStr $ String $1 }
-    | '{{' List '}}'                  { mkStr $2 }
-    | '{{#' List '}}' List '{{/#}}'   { mkSection $2 $4 }
-    | Literal                         { $1 }
+    : Literal                         { $1 }
     | '(' List ')'                    { $2 }
 
 Literal
@@ -52,22 +62,19 @@ Literal
 lexer :: (Lexeme -> Alex a) -> Alex a
 lexer = (alexMonadScan' >>=)
 
--- | Join parallel list into a single list.
-joinList :: List -> List -> List
-joinList (List [Symbol "str", List l1]) l2 =
-    List [Symbol "str", List $ l1 ++ [l2]]
-joinList l1@(List _) l2@(List _) = List [Symbol "str", List [l1, l2]]
-joinList (List l1) l2            = List $ l1 ++ [l2]
-joinList l1 l2                   = List [l1, l2]
+-- | Append `l2` into `l1`.
+--
+--   Make a new list if `l1` is not yet a list.
+appendList :: List -> List -> List
+appendList (List l1) l2 = List $ l1 ++ [l2]
+appendList l1 l2        = List [l1, l2]
 
--- | Make a list for section sequence.
-mkSection :: List -> List -> List
-mkSection (List l1) l2 = List $ l1 ++ [l2]
-mkSection l1 l2        = List [l1, l2]
-
--- | Make a list for str sequence.
-mkStr :: List -> List
-mkStr d = List [Symbol "str", d]
+-- | Append `l2` into the `str` sequence.
+--
+--   Make a new `str` sequence if it is not yet a `str` sequence.
+appendSTmp :: List -> List -> List
+appendSTmp (List (Symbol "str" : l1)) l2 = List $ Symbol "str" : l1 ++ [l2]
+appendSTmp l1 l2                         = List [Symbol "str", l1, l2]
 
 -- | Produce a parser error with readable error message and location
 --   information.

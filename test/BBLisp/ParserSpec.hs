@@ -26,110 +26,59 @@ astOf (Right t)  = t
 sample1STree :: List
 sample1STree = List
     [ Symbol "str"
+    -- First line. Test for section block with tags.
     , List
-        -- First line. Test for section block with tags.
-        [ List
-            [ Symbol "if"
+        [ Symbol "if"
+        , Symbol "$name"
+        , List
+            [ Symbol "str"
+            , String "Hello "
             , Symbol "$name"
-            , List
-                [ Symbol "str"
-                , List
-                    [ List
-                        [ Symbol "str"
-                        , String "Hello "
-                        ]
-                    , List
-                        [ Symbol "str"
-                        , Symbol "$name"
-                        ]
-                    , List
-                        [ Symbol "str"
-                        , String "."
-                        ]
-                    ]
-                ]
-            ]
-        -- Second line. Test for simple section block.
-        , List
-            [ Symbol "str"
-            , String "\n"
-            ]
-        , List
-            [ Symbol "unless"
-            , Symbol "$name"
-            , List
-                [ Symbol "str"
-                , String "Hello world."
-                ]
-            ]
-        -- Third line. Test for nested section blocks.
-        , List
-            [ Symbol "str"
-            , String "\n"
-            ]
-        , List
-            [ Symbol "with"
-            , Symbol "$params"
-            , List
-                [ Symbol "str"
-                , List
-                    [ List
-                        [ Symbol "if"
-                        , Symbol "$$n"
-                        , List
-                            [ Symbol "str"
-                            , Symbol "$$n"
-                            ]
-                        ]
-                    , List
-                        [ Symbol "unless"
-                        , Symbol "$$n"
-                        , List
-                            [ Symbol "str"
-                            , String "1"
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        -- Fourth and fifth line.
-        -- Test for comment, code block, parens and integer.
-        , List
-            [ Symbol "str"
-            , String "\n\nThe answer is "
-            ]
-        , List
-            [ Symbol "str"
-            , List
-                [ Symbol "+"
-                , List
-                    [ Symbol "-"
-                    , Integer 50
-                    , Integer 20
-                    ]
-                , Integer 12
-                ]
-            ]
-        -- Sixth line. Test for code block, string and decimal.
-        , List
-            [ Symbol "str"
-            , String ".\nFirst 10 digits of "
-            ]
-        , List
-            [ Symbol "str"
-            , String "pi"
-            ]
-        , List
-            [ Symbol "str"
-            , String " is "
-            ]
-        , List
-            [ Symbol "str"
-            , Decimal $ read "3.1415926535"
-            ]
-        , List
-            [ Symbol "str"
             , String "."
             ]
         ]
+    -- Second line. Test for simple section block.
+    , String "\n"
+    , List
+        [ Symbol "unless"
+        , Symbol "$name"
+        , String "Hello world."
+        ]
+    -- Third line. Test for nested section blocks.
+    , String "\n"
+    , List
+        [ Symbol "with"
+        , Symbol "$params"
+        , List
+            [ Symbol "str"
+            , List
+                [ Symbol "if"
+                , Symbol "$$n"
+                , Symbol "$$n"
+                ]
+            , List
+                [ Symbol "unless"
+                , Symbol "$$n"
+                , String "1"
+                ]
+            ]
+        ]
+    -- Fourth and fifth line.
+    -- Test for comment, code block, parens and integer.
+    , String "\n\nThe answer is "
+    , List
+        [ Symbol "+"
+        , List
+            [ Symbol "-"
+            , Integer 50
+            , Integer 20
+            ]
+        , Integer 12
+        ]
+    -- Sixth line. Test for code block, string and decimal.
+    , String ".\nFirst 10 digits of "
+    , String "pi"
+    , String " is "
+    , Decimal $ read "3.1415926535"
+    , String "."
     ]
