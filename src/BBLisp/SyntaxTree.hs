@@ -15,10 +15,10 @@ import Data.Scientific (Scientific)
 type Bindings = Map String List
 
 -- | Signature for syntactic form.
-type Syntax   = Bindings -> List -> Either String (Bindings, List)
+type Syntax   = Bindings -> [List] -> Either String (Bindings, List)
 
 -- | Signature for pure function.
-type Function = List -> Either String List
+type Function = [List] -> Either String List
 
 -- | Recursive list structure to store code and data.
 data List
