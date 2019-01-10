@@ -4,8 +4,6 @@ module BBLisp.LexerSpec
       spec
     ) where
 
-import Data.List (intercalate)
-
 import BBLisp.LexemeClass (LexemeClass(..))
 import BBLisp.Lexer (Lexeme(..), alexMonadScan', runAlex)
 import Test.Hspec
@@ -60,10 +58,7 @@ collectWhileM p fM =
 -- | Extract tokens from lexemes.
 tokensOf :: Either String [Lexeme] -> [LexemeClass]
 tokensOf (Left msg) = error $ "Lexer error: " ++ msg
-tokensOf (Right ls) =
-    map f ls
-  where
-    f (Lexeme _ l _) = l
+tokensOf (Right ls) = [l | Lexeme _ l _ <- ls]
 
 -- | Expected tokens for `sampleTemplate1`.
 sample1Tokens :: [LexemeClass]
@@ -209,10 +204,7 @@ locationTest1Err =
 
 -- | Sample template with error before end of line.
 locationTest2 :: String
-locationTest2 = intercalate "\n"
-    [ "Hello {{ \"world\\_"
-    , "and goodbye."
-    ]
+locationTest2 = "Hello {{ \"world\\_\nand goodbye."
 
 -- | Expected error for `locationTest2`.
 locationTest2Err :: String
