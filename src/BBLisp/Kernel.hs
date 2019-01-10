@@ -55,7 +55,7 @@ if' _ l = Left $ "if: Unexpected form " ++ show l
 -- | With one argument, returns the string representation of `v`.
 --
 --   With more than one argument, returns the concatenation of the string
---   representation of `vs`.
+--   representations of each element of `vs`.
 str :: Function
 str [Boolean True]  = Right $ String "true"
 str [Boolean False] = Right $ String "false"
