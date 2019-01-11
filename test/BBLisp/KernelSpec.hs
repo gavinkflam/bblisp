@@ -32,6 +32,8 @@ spec =
             K.str [K.primitives ! "str"] `shouldBe` Right (String "str")
         it "returns the concatenation of the string representations" $
             K.str strTestList `shouldBe` Right (String "1world.")
+        it "returns empty string for zero arguments" $
+            K.str [] `shouldBe` Right (String "")
   where
     piStr       = "3.1415926535"
     strTestList = [Integer 1, Symbol "world", String "."]
