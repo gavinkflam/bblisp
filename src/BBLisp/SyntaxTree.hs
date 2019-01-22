@@ -27,6 +27,7 @@ data List
     | Decimal   Scientific
     | String    String
     | Symbol    String
+    | Nil
     | Primitive Primitive
     | List      [List]
     deriving (Eq, Show)

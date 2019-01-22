@@ -8,14 +8,31 @@ import BBLisp.LexemeClass (LexemeClass(..))
 import BBLisp.Lexer (Lexeme(..), alexMonadScan', runAlex)
 import Test.Hspec
 
-import Templates (sampleTemplate1)
+import qualified Templates as Tmp
 
 -- | Spec for `Lexer`.
 spec :: Spec
-spec =
-    describe "runLexer" $ do
-        it "tokenizes sample template containing all tokens" $
-            tokensOf (runLexer sampleTemplate1) `shouldBe` sample1Tokens
+spec = do
+    describe "tokenizes templates" $ do
+        it "tokenizes template containing booleans" $
+            tokensOf (runLexer Tmp.tempBool) `shouldBe` tokensBool
+        it "tokenizes template containing nil" $
+            tokensOf (runLexer Tmp.tempNil) `shouldBe` tokensNil
+        it "tokenizes template containing literals" $
+            tokensOf (runLexer Tmp.tempLit) `shouldBe` tokensLit
+        it "tokenizes template containing only comment" $
+            tokensOf (runLexer Tmp.tempComment1) `shouldBe` tokensComment1
+        it "tokenizes template containing comment" $
+            tokensOf (runLexer Tmp.tempComment2) `shouldBe` tokensComment2
+        it "tokenizes template containing if" $
+            tokensOf (runLexer Tmp.tempIf) `shouldBe` tokensIf
+        it "tokenizes template containing unless" $
+            tokensOf (runLexer Tmp.tempUnless) `shouldBe` tokensUnless
+        it "tokenizes template containing with" $
+            tokensOf (runLexer Tmp.tempWith) `shouldBe` tokensWith
+        it "tokenizes template containing arithmetic" $
+            tokensOf (runLexer Tmp.tempArith) `shouldBe` tokensArith
+    describe "detects lexer errors" $ do
         it "returns error for unknown escape sequence in string literal" $
             runLexer invalidStringTest1 `shouldBe` Left invalidStringTest1Err
         it "returns error for invalid multiline string literal" $
@@ -60,13 +77,71 @@ tokensOf :: Either String [Lexeme] -> [LexemeClass]
 tokensOf (Left msg) = error $ "Lexer error: " ++ msg
 tokensOf (Right ls) = [l | Lexeme _ l _ <- ls]
 
--- | Expected tokens for `sampleTemplate1`.
-sample1Tokens :: [LexemeClass]
-sample1Tokens =
-    -- First line. Test for section block with tags.
+-- | Expected tokens for `tempBool`.
+tokensBool :: [LexemeClass]
+tokensBool =
+    [ LText "This is "
+    , LLMustache
+    , LIdentifier "true"
+    , LRMustache
+    , LText ". That is "
+    , LLMustache
+    , LIdentifier "false"
+    , LRMustache
+    , LText "."
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempNil`.
+tokensNil :: [LexemeClass]
+tokensNil =
+    [ LText "Nothing is here, except "
+    , LLMustache
+    , LIdentifier "nil"
+    , LRMustache
+    , LText "."
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempLit`.
+tokensLit :: [LexemeClass]
+tokensLit =
+    [ LText "First "
+    , LLMustache
+    , LInteger 10
+    , LRMustache
+    , LText " digits of "
+    , LLMustache
+    , LString "pi"
+    , LRMustache
+    , LText " is "
+    , LLMustache
+    , LDecimal $ read "3.1415926535"
+    , LRMustache
+    , LText "."
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempComment1`.
+tokensComment1 :: [LexemeClass]
+tokensComment1 = [LEOF]
+
+-- | Expected tokens for `tempComment2`.
+tokensComment2 :: [LexemeClass]
+tokensComment2 =
+    [ LText "hello world."
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempIf`.
+tokensIf :: [LexemeClass]
+tokensIf =
     [ LLMustachePound
     , LIdentifier "if"
+    , LLParen
+    , LIdentifier "defined?"
     , LIdentifier "$name"
+    , LRParen
     , LRMustache
     , LText "Hello "
     , LLMustache
@@ -74,37 +149,43 @@ sample1Tokens =
     , LRMustache
     , LText "."
     , LCloseMustachePound
-    -- Second line. Test for simple section block.
-    , LText "\n"
-    , LLMustachePound
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempUnless`.
+tokensUnless :: [LexemeClass]
+tokensUnless =
+    [ LLMustachePound
     , LIdentifier "unless"
+    , LLParen
+    , LIdentifier "defined?"
     , LIdentifier "$name"
+    , LRParen
     , LRMustache
     , LText "Hello world."
     , LCloseMustachePound
-    -- Third line. Test for nested section blocks.
-    , LText "\n"
-    , LLMustachePound
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempWith`.
+tokensWith :: [LexemeClass]
+tokensWith =
+    [ LLMustachePound
     , LIdentifier "with"
-    , LIdentifier "$params"
-    , LRMustache
-    , LLMustachePound
-    , LIdentifier "if"
-    , LIdentifier "$$n"
+    , LIdentifier "$list"
     , LRMustache
     , LLMustache
-    , LIdentifier "$$n"
+    , LIdentifier "$$element"
     , LRMustache
+    , LText " and "
     , LCloseMustachePound
-    , LLMustachePound
-    , LIdentifier "unless"
-    , LIdentifier "$$n"
-    , LRMustache
-    , LText "1"
-    , LCloseMustachePound
-    , LCloseMustachePound
-    -- Fourth and fifth line. Test for comment, code block, parens and integer.
-    , LText "\n\nThe answer is "
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempArith`.
+tokensArith :: [LexemeClass]
+tokensArith =
+    [ LText "The answer is "
     , LLMustache
     , LIdentifier "+"
     , LLParen
@@ -113,15 +194,6 @@ sample1Tokens =
     , LInteger 20
     , LRParen
     , LInteger 12
-    , LRMustache
-    -- Sixth line. Test for code block, string and decimal.
-    , LText ".\nFirst 10 digits of "
-    , LLMustache
-    , LString "pi"
-    , LRMustache
-    , LText " is "
-    , LLMustache
-    , LDecimal $ read "3.1415926535"
     , LRMustache
     , LText "."
     , LEOF

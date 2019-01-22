@@ -8,28 +8,90 @@ import BBLisp.Parser (runParser)
 import BBLisp.SyntaxTree (List(..))
 import Test.Hspec
 
-import Templates (sampleTemplate1)
+import qualified Templates as Tmp
 
 -- | Spec for `Parser`.
 spec :: Spec
 spec =
-    describe "runParser" $
-        it "parses sample template containing all syntax types" $
-            astOf (runParser sampleTemplate1) `shouldBe` sample1STree
+    describe "parses templates into syntax tree" $ do
+        it "parses template containing booleans" $
+            astOf (runParser Tmp.tempBool) `shouldBe` astBool
+        it "parses template containing nil" $
+            astOf (runParser Tmp.tempNil) `shouldBe` astNil
+        it "parses template containing literals" $
+            astOf (runParser Tmp.tempLit) `shouldBe` astLit
+        it "parses template containing only comment" $
+            astOf (runParser Tmp.tempComment1) `shouldBe` astComment1
+        it "parses template containing comment" $
+            astOf (runParser Tmp.tempComment2) `shouldBe` astComment2
+        it "parses template containing if" $
+            astOf (runParser Tmp.tempIf) `shouldBe` astIf
+        it "parses template containing unless" $
+            astOf (runParser Tmp.tempUnless) `shouldBe` astUnless
+        it "parses template containing with" $
+            astOf (runParser Tmp.tempWith) `shouldBe` astWith
+        it "parses template containing arithmetic" $
+            astOf (runParser Tmp.tempArith) `shouldBe` astArith
 
 -- | Extract syntax tree from result.
 astOf :: Either String List -> List
 astOf (Left msg) = error $ "Parser error: " ++ msg
 astOf (Right t)  = t
 
--- | Expected syntax tree for `sampleTemplate1`.
-sample1STree :: List
-sample1STree = List
+-- | Expected syntax tree for `tempBool`.
+astBool :: List
+astBool = List
     [ Symbol "str"
-    -- First line. Test for section block with tags.
+    , String "This is "
+    , Boolean True
+    , String ". That is "
+    , Boolean False
+    , String "."
+    ]
+
+-- | Expected syntax tree for `tempNil`.
+astNil :: List
+astNil = List
+    [ Symbol "str"
+    , String "Nothing is here, except "
+    , Nil
+    , String "."
+    ]
+
+-- | Expected syntax tree for `tempLit`.
+astLit :: List
+astLit = List
+    [ Symbol "str"
+    , String "First "
+    , Integer 10
+    , String " digits of "
+    , String "pi"
+    , String " is "
+    , Decimal $ read "3.1415926535"
+    , String "."
+    ]
+
+-- | Expected syntax tree for `tempComment1`.
+astComment1 :: List
+astComment1 = List [Symbol "str"]
+
+-- | Expected syntax tree for `tempComment2`.
+astComment2 :: List
+astComment2 = List
+    [ Symbol "str"
+    , String "hello world."
+    ]
+
+-- | Expected syntax tree for `tempIf`.
+astIf :: List
+astIf = List
+    [ Symbol "str"
     , List
         [ Symbol "if"
-        , Symbol "$name"
+        , List
+            [ Symbol "defined?"
+            , Symbol "$name"
+            ]
         , List
             [ Symbol "str"
             , String "Hello "
@@ -37,35 +99,42 @@ sample1STree = List
             , String "."
             ]
         ]
-    -- Second line. Test for simple section block.
-    , String "\n"
+    ]
+
+-- | Expected syntax tree for `tempUnless`.
+astUnless :: List
+astUnless = List
+    [ Symbol "str"
     , List
         [ Symbol "unless"
-        , Symbol "$name"
+        , List
+            [ Symbol "defined?"
+            , Symbol "$name"
+            ]
         , String "Hello world."
         ]
-    -- Third line. Test for nested section blocks.
-    , String "\n"
+    ]
+
+-- | Expected syntax tree for `tempWith`.
+astWith :: List
+astWith = List
+    [ Symbol "str"
     , List
         [ Symbol "with"
-        , Symbol "$params"
+        , Symbol "$list"
         , List
             [ Symbol "str"
-            , List
-                [ Symbol "if"
-                , Symbol "$$n"
-                , Symbol "$$n"
-                ]
-            , List
-                [ Symbol "unless"
-                , Symbol "$$n"
-                , String "1"
-                ]
+            , Symbol "$$element"
+            , String " and "
             ]
         ]
-    -- Fourth and fifth line.
-    -- Test for comment, code block, parens and integer.
-    , String "\n\nThe answer is "
+    ]
+
+-- | Expected syntax tree for `tempArith`.
+astArith :: List
+astArith = List
+    [ Symbol "str"
+    , String "The answer is "
     , List
         [ Symbol "+"
         , List
@@ -75,10 +144,5 @@ sample1STree = List
             ]
         , Integer 12
         ]
-    -- Sixth line. Test for code block, string and decimal.
-    , String ".\nFirst 10 digits of "
-    , String "pi"
-    , String " is "
-    , Decimal $ read "3.1415926535"
     , String "."
     ]
