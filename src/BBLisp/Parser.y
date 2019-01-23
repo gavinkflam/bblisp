@@ -27,6 +27,9 @@ import BBLisp.SyntaxTree (List(..))
     integer   { Lexeme _ (LInteger $$) _ }
     decimal   { Lexeme _ (LDecimal $$) _ }
     string    { Lexeme _ (LString $$) _ }
+    true      { Lexeme _ (LIdentifier "true") _ }
+    false     { Lexeme _ (LIdentifier "false") _ }
+    nil       { Lexeme _ (LIdentifier "nil") _ }
     ident     { Lexeme _ (LIdentifier $$) _ }
 
 %%
@@ -56,6 +59,9 @@ Literal
     : integer                         { Integer $1 }
     | decimal                         { Decimal $1 }
     | string                          { String  $1 }
+    | true                            { Boolean True }
+    | false                           { Boolean False }
+    | nil                             { Nil }
     | ident                           { Symbol  $1 }
 {
 -- | Wrapper of lexer.
