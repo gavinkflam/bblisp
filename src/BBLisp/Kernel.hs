@@ -62,6 +62,7 @@ if' _ (_:_:_:_)     = Left "Too many arguments to if"
 --   With more than one argument, returns the concatenation of the string
 --   representations of each element of `vs`.
 str :: Function
+str []              = Right $ String ""
 str [Boolean True]  = Right $ String "true"
 str [Boolean False] = Right $ String "false"
 str [Integer v]     = Right $ String $ show v
