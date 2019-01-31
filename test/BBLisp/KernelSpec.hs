@@ -41,6 +41,9 @@ spec = do
             snd <$> ifTest (Boolean True) `shouldBe` Right (String "42")
         it "evaluates and returns else when test is evaluated to false" $
             snd <$> ifTest (Boolean False) `shouldBe` Right (String "falsy")
+        it "evaluates and returns nil when test is evaluated to false and there are no else" $
+            snd <$> K.if' K.primitives [Boolean False, Integer 0]
+            `shouldBe` Right Nil
         it "returns error for incorrect data type" $
             K.if' K.primitives [Integer 0]
             `shouldBe` Left "Incorrect type for `test`."
