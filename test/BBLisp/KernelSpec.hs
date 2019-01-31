@@ -26,6 +26,8 @@ spec = do
             K.str [String "yolo"] `shouldBe` Right (String "yolo")
         it "returns the name of Symbol" $
             K.str [Symbol "eval"] `shouldBe` Right (String "eval")
+        it "returns empty string for nil" $
+            K.str [Nil] `shouldBe` Right (String "")
         it "returns the string representation of syntactic form" $
             K.str [K.primitives ! "eval"] `shouldBe` Right (String "eval")
         it "returns the string representation of function" $
