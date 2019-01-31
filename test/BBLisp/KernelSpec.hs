@@ -47,11 +47,14 @@ spec = do
         it "returns error for incorrect data type" $
             K.if' K.primitives [Integer 0, String "yes"]
             `shouldBe` Left "Incorrect type for `test`."
+        it "returns error for no arguments" $
+            K.if' K.primitives []
+            `shouldBe` Left "Too few arguments to if"
         it "returns error for too few arguments" $
-            K.if' K.primitives ifFewArgs
+            K.if' K.primitives [Boolean True]
             `shouldBe` Left "Too few arguments to if"
         it "returns error for too many arguments" $
-            K.if' K.primitives ifManyArgs
+            K.if' K.primitives [Boolean True, Integer 1, Integer 2, Integer 3]
             `shouldBe` Left "Too many arguments to if"
   where
     piStr       = "3.1415926535"
@@ -61,5 +64,3 @@ spec = do
         , List [Symbol "str", Integer 42]
         , List [Symbol "str", String "falsy"]
         ]
-    ifFewArgs   = [Boolean True]
-    ifManyArgs  = [Boolean True, Integer 1, Integer 2, Integer 3]
