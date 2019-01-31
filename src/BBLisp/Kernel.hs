@@ -16,6 +16,7 @@ import BBLisp.SyntaxTree (Bindings, Function, List(..), Primitive(..), Syntax)
 
 -- | Evaluate an expression or definition.
 eval :: Syntax
+eval b [v@Nil]         = Right (b, v)
 eval b [v@(Boolean _)] = Right (b, v)
 eval b [v@(Integer _)] = Right (b, v)
 eval b [v@(Decimal _)] = Right (b, v)
@@ -38,17 +39,20 @@ eval _ l = Left $ "eval: unexpected form " ++ show l
 
 -- | Evaluates `test`.
 --
---   If it produces any value other than `false`, evaluate `then` and returns
---   the result.
---
---   Otherwise, evaluate `else` and returns the result, or returns `nil` when
---   there are no `else`.
+--   If it produces `true`, evaluate `then` and returns the result.
+--   If it produces `false`, evaluate `else` and returns the result, or returns
+--   `nil` when there are no `else`.
 if' :: Syntax
 if' b [test, then', else'] =
     case eval b [test] of
         Left  err                -> Left err
-        Right (_, Boolean False) -> eval b [else']
-        Right _                  -> eval b [then']
+        Right (_, Boolean True)  -> eval b $ evalArgs then'
+        Right (_, Boolean False) -> eval b $ evalArgs else'
+        Right (_, _)             -> Left "Incorrect type for `test`."
+  where
+      evalArgs (List v) = v
+      evalArgs v        = [v]
+if' b [test, then'] = if' b [test, then', Nil]
 if' _ l = Left $ "if: Unexpected form " ++ show l
 -- ^ TODO: Recursively define pattern without `else` after adding `nil`.
 
