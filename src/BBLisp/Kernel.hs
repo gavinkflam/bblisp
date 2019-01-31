@@ -53,8 +53,9 @@ if' b [test, then', else'] =
       evalArgs (List v) = v
       evalArgs v        = [v]
 if' b [test, then'] = if' b [test, then', Nil]
-if' _ l = Left $ "if: Unexpected form " ++ show l
--- ^ TODO: Recursively define pattern without `else` after adding `nil`.
+if' _ []            = Left "Too few arguments to if"
+if' _ [_]           = Left "Too few arguments to if"
+if' _ (_:_:_:_)     = Left "Too many arguments to if"
 
 -- | With one argument, returns the string representation of `v`.
 --
