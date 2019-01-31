@@ -39,14 +39,17 @@ spec = do
     describe "if'" $ do
         it "evaluates and returns then when test is evaluated to true" $
             snd <$> ifTest (Boolean True) `shouldBe` Right (String "42")
-        it "evaluates and returns then when test is not evaluated to false" $
-            snd <$> ifTest (Integer 0) `shouldBe` Right (String "42")
         it "evaluates and returns else when test is evaluated to false" $
             snd <$> ifTest (Boolean False) `shouldBe` Right (String "falsy")
+        it "returns error for incorrect data type" $
+            K.if' K.primitives [Integer 0]
+            `shouldBe` Left "Incorrect type for `test`."
         it "returns error for too few arguments" $
-            K.if' K.primitives ifFewArgs `shouldBe` Left "Too few arguments to if"
+            K.if' K.primitives ifFewArgs
+            `shouldBe` Left "Too few arguments to if"
         it "returns error for too many arguments" $
-            K.if' K.primitives ifManyArgs `shouldBe` Left "Too many arguments to if"
+            K.if' K.primitives ifManyArgs
+            `shouldBe` Left "Too many arguments to if"
   where
     piStr       = "3.1415926535"
     strTestList = [Integer 1, Symbol "world", String "."]
