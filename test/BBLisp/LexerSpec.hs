@@ -20,6 +20,8 @@ spec = do
             tokensOf (runLexer Tmp.tempNil) `shouldBe` tokensNil
         it "tokenizes template containing literals" $
             tokensOf (runLexer Tmp.tempLit) `shouldBe` tokensLit
+        it "tokenizes empty template" $
+            tokensOf (runLexer Tmp.tempEmpty) `shouldBe` tokensEmpty
         it "tokenizes template containing only comment" $
             tokensOf (runLexer Tmp.tempComment1) `shouldBe` tokensComment1
         it "tokenizes template containing comment" $
@@ -121,6 +123,10 @@ tokensLit =
     , LText "."
     , LEOF
     ]
+
+-- | Expected tokens for `tempEmpty`.
+tokensEmpty :: [LexemeClass]
+tokensEmpty = [LEOF]
 
 -- | Expected tokens for `tempComment1`.
 tokensComment1 :: [LexemeClass]

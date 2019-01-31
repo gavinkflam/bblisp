@@ -4,6 +4,7 @@ module Templates
       tempBool
     , tempNil
     , tempLit
+    , tempEmpty
     , tempComment1
     , tempComment2
     , tempIf
@@ -23,6 +24,10 @@ tempNil = "Nothing is here, except {{ nil }}."
 -- Template to test literals.
 tempLit :: String
 tempLit = "First {{ 10 }} digits of {{ \"pi\" }} is {{ 3.1415926535 }}."
+
+-- Template to test empty template.
+tempEmpty :: String
+tempEmpty = ""
 
 -- Template to test comment.
 tempComment1 :: String

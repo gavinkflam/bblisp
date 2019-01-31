@@ -20,6 +20,8 @@ spec =
             astOf (runParser Tmp.tempNil) `shouldBe` astNil
         it "parses template containing literals" $
             astOf (runParser Tmp.tempLit) `shouldBe` astLit
+        it "parses empty template" $
+            astOf (runParser Tmp.tempEmpty) `shouldBe` astEmpty
         it "parses template containing only comment" $
             astOf (runParser Tmp.tempComment1) `shouldBe` astComment1
         it "parses template containing comment" $
@@ -70,6 +72,10 @@ astLit = List
     , Decimal $ read "3.1415926535"
     , String "."
     ]
+
+-- | Expected syntax tree for `tempEmpty`.
+astEmpty :: List
+astEmpty = List [Symbol "str"]
 
 -- | Expected syntax tree for `tempComment1`.
 astComment1 :: List
