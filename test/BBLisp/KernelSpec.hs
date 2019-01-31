@@ -45,7 +45,7 @@ spec = do
             snd <$> K.if' K.primitives [Boolean False, Integer 0]
             `shouldBe` Right Nil
         it "returns error for incorrect data type" $
-            K.if' K.primitives [Integer 0]
+            K.if' K.primitives [Integer 0, String "yes"]
             `shouldBe` Left "Incorrect type for `test`."
         it "returns error for too few arguments" $
             K.if' K.primitives ifFewArgs
@@ -59,7 +59,7 @@ spec = do
     ifTest test = K.if' K.primitives
         [ test
         , List [Symbol "str", Integer 42]
-        , List [Symbol "str", Symbol "falsy"]
+        , List [Symbol "str", String "falsy"]
         ]
     ifFewArgs   = [Boolean True]
     ifManyArgs  = [Boolean True, Integer 1, Integer 2, Integer 3]
