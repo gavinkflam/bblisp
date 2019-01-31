@@ -63,6 +63,7 @@ str [Integer v]     = Right $ String $ show v
 str [Decimal v]     = Right $ String $ show v
 str [s@(String _)]  = Right s
 str [Symbol v]      = Right $ String v
+str [Nil]           = Right $ String ""
 str [Primitive (Syntax   name _)] = Right $ String name
 str [Primitive (Function name _)] = Right $ String name
 str vs =
