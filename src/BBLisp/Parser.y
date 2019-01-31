@@ -34,6 +34,10 @@ import BBLisp.SyntaxTree (List(..))
 
 %%
 
+Prog
+    : Tmp                             { $1 }
+    | {- empty -}                     { List [Symbol "str"] }
+
 Tmp
     : Tmp1                            { List [Symbol "str", $1] }
     | Tmp Tmp1                        { appendList $1 $2 }
