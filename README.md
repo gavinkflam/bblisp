@@ -7,15 +7,15 @@ Influenced by Handlebars, Spacebars, LISP, Racket, Clojure and BBCode.
 ## Example
 
 ```
-{{! Logicless blocks. }}
-{{# defined? $name }}Hello {{ $name }}!{{/#}}
-{{^ defined? $name }}Hello world!{{/^}}
+{{! Conditional blocks. }}
+{{# if (defined? $name) }}Hello {{ $name }}!{{/#}}
+{{# unless (defined? $name) }}Hello world!{{/#}}
 
 {{! Flexible and optional specifications. }}
 {{ assert $n (and (defined? $n) (integer? $n)) "n must be an integer" }}
 
 {{! Expressive and customizable functions.
-    'pluralize' is a user-defined Haskell function of just a few lines. }}
+    'pluralize' is an example of user-defined Haskell function. }}
 There {{# pluralize $n }}is{{/#}} {{ $n }} {{# pluralize $n }}apple{{/#}}.
 ```
 
