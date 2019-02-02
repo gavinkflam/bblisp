@@ -1,4 +1,5 @@
 {
+{-# LANGUAGE OverloadedStrings, ViewPatterns, PatternSynonyms #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 -- ^ Generated template contains unused qualified import of Control.Monad.
 --   This should be reviewed in the future.
@@ -16,17 +17,18 @@ module BBLisp.Lexer
     , runAlex
     ) where
 
+import qualified Data.ByteString as Bs
+import qualified Data.ByteString.Builder as Bsb
+import qualified Data.ByteString.Lazy as Lbs
+import qualified Data.ByteString.Lazy.Char8 as Lbsc
 import Data.Char (isSpace)
-import Data.List (dropWhileEnd)
-import Numeric (readDec)
-
 import Data.Map (Map)
 import qualified Data.Map as Map
 
 import BBLisp.LexemeClass (LexemeClass(..))
 }
 
-%wrapper "monadUserState"
+%wrapper "monadUserState-bytestring"
 
 $whitespace        = [\ \t\b]
 $textchar          = [$printable $white] # \{
@@ -79,15 +81,24 @@ state :-
 <string>  \n            { invalidMultilineString }
 
 {
+-- | Pattern synonyms for matching head of ByteString as characters.
+infixr 5 :<
+pattern (:<) :: Char -> Lbs.ByteString -> Lbs.ByteString
+pattern b :< bs <- (Lbsc.uncons -> Just (b, bs))
+
+-- | Pattern synonyms for matching empty ByteString.
+pattern Empty :: Lbs.ByteString
+pattern Empty <- (Lbs.uncons -> Nothing)
+
 -- | Lexer action type.
-type Action = AlexInput -> Int -> Alex Lexeme
+type Action = AlexInput -> Int64 -> Alex Lexeme
 
 -- | Optional position information.
 type Pos    = Maybe AlexPosn
 
 -- | Lexeme containing the position, token and text.
 data Lexeme =
-    Lexeme AlexPosn LexemeClass (Maybe String)
+    Lexeme AlexPosn LexemeClass (Maybe Lbs.ByteString)
     deriving (Eq, Show)
 
 -- | Possible lexer states.
@@ -104,8 +115,8 @@ data AlexUserState = AlexUserState
     {
       -- Used by lexer phase
       lexerState         :: LexerState
-    , lexerTextValue     :: String
-    , lexerStringValue   :: String
+    , lexerTextValue     :: Bsb.Builder
+    , lexerStringValue   :: Bsb.Builder
     , lexerSectionDepth  :: Integer
       -- Used by parser phase
     , parserCollIdent    :: Map String Int
@@ -121,8 +132,8 @@ template = 0
 alexInitUserState :: AlexUserState
 alexInitUserState = AlexUserState
     { lexerState         = STemplate
-    , lexerTextValue     = ""
-    , lexerStringValue   = ""
+    , lexerTextValue     = mempty
+    , lexerStringValue   = mempty
     , lexerSectionDepth  = 0
     , parserCollIdent    = Map.empty
     , parserCurrentToken = Lexeme undefined LEOF Nothing
@@ -140,24 +151,24 @@ setLexerState v = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerState = v } }, ())
 
 -- | Get the text value.
-getLexerTextValue :: Alex String
+getLexerTextValue :: Alex Bsb.Builder
 getLexerTextValue = Alex $ \s@AlexState{ alex_ust = ust } ->
     Right (s, lexerTextValue ust)
 
 -- | Update the text value with a function.
-updateLexerTextValue :: (String -> String) -> Alex ()
+updateLexerTextValue :: (Bsb.Builder -> Bsb.Builder) -> Alex ()
 updateLexerTextValue f = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerTextValue = newVal s } }, ())
   where
     newVal s = f $ lexerTextValue $ alex_ust s
 
 -- | Get the string value.
-getLexerStringValue :: Alex String
+getLexerStringValue :: Alex Bsb.Builder
 getLexerStringValue = Alex $ \s@AlexState{ alex_ust = ust } ->
     Right (s, lexerStringValue ust)
 
 -- | Update the string value with a function.
-updateLexerStringValue :: (String -> String) -> Alex ()
+updateLexerStringValue :: (Bsb.Builder -> Bsb.Builder) -> Alex ()
 updateLexerStringValue f = Alex $ \s ->
     Right (s{ alex_ust=(alex_ust s){ lexerStringValue = newVal s } }, ())
   where
@@ -205,7 +216,7 @@ leaveString :: Action
 leaveString input len =
     setLexerState SLisp >> getLexerStringValue >>= mkString
   where
-    mkString s = mkL (LString s) input len
+    mkString s = mkL (LString $ builderToBS s) input len
 
 -- | Close section block.
 closeSectionBlock :: Action
@@ -226,64 +237,73 @@ leaveLisp l _ _ = error $ "Invalid call to leaveLisp: " ++ show l
 --
 --   Make the text lexeme if the following characters will end the text block.
 addToText :: Action
-addToText (p, _, _, str) len = do
-    updateLexerTextValue (++ take len str)
-    if isEndOfText $ drop len str
+addToText (p, _, str, _) len = do
+    updateLexerTextValue (<> Bsb.lazyByteString (Lbs.take len str))
+    if isEndOfText $ Lbs.drop len str
         then mkText <$> getAndClearLexerTextValue
         else alexMonadScan'
   where
-    mkText s = Lexeme p (LText s) $ Just s
+    mkText s = Lexeme p (LText $ builderToBS s) $ Just $ Bsb.toLazyByteString s
     getAndClearLexerTextValue = do
         s <- getLexerTextValue
-        updateLexerTextValue $ const ""
+        updateLexerTextValue $ const mempty
         return s
 
 -- | Add character to string value.
 addCharToString :: Char -> Action
-addCharToString c _ _ = updateLexerStringValue (++ [c]) >> alexMonadScan'
+addCharToString c _ _ =
+    updateLexerStringValue (<> Bsb.charUtf8 c) >> alexMonadScan'
 
 -- | Add the current character to string value store.
 addToString :: Action
-addToString (_, _, _, str) len =
-    updateLexerStringValue (++ take len str) >> alexMonadScan'
+addToString (_, _, str, _) len =
+    updateLexerStringValue (<> Bsb.lazyByteString str') >> alexMonadScan'
+  where
+    str' = Lbs.take len str
 
 -- | Make lexeme from lexeme class.
 mkL :: LexemeClass -> Action
-mkL l (p, _, _, str) len = return $ Lexeme p l $ Just $ take len str
+mkL l (p, _, str, _) len =
+    return $ Lexeme p l $ Just $ Lbs.take len str
 
 -- | Read and make identifier lexeme.
 mkIdentifier :: Action
-mkIdentifier (p, _, _, str) len =
-    return $ Lexeme p (LIdentifier str') $ Just str'
+mkIdentifier (p, _, str, _) len =
+    return $ Lexeme p (LIdentifier $ Lbs.toStrict str') $ Just str'
   where
-    str' = take len str
+    str' = Lbs.take len str
 
 -- | Read and make integer lexeme.
 mkInteger :: Action
-mkInteger (p, _, _, str) len =
-    case readDec str' of
-        [(val, _)] -> return $ Lexeme p (LInteger val) $ Just str'
-        _          -> alexError' "Invalid integer"
+mkInteger (p, _, str, _) len =
+    case Lbsc.readInteger str' of
+        Just (val, _) -> return $ Lexeme p (LInteger val) $ Just str'
+        _             -> alexError' "Invalid integer"
   where
-    str' = take len str
+    str' = Lbs.take len str
 
 -- | Read and make decimal lexeme.
 mkDecimal :: Action
-mkDecimal (p, _, _, str) len =
-    case reads str' of
+mkDecimal (p, _, str, _) len =
+    case reads $ Lbsc.unpack str' of
         [(val, _)] -> return $ Lexeme p (LDecimal val) $ Just str'
         _          -> alexError' "Invalid decimal"
   where
-    str' = take len str
+    str' = Lbs.take len str
+
+-- | Execute Builder and return the generated strict ByteString.
+builderToBS :: Bsb.Builder -> Bs.ByteString
+builderToBS = Lbs.toStrict . Bsb.toLazyByteString
 
 -- | Returns the longest prefix of the list `xs` that satisfy the predicate `p`,
 --   plus the immediately next element if any.
-takeWhileAndOneMore :: (a -> Bool) -> [a] -> ([a], Maybe a)
+takeWhileAndOneMore
+    :: (Char -> Bool) -> Lbs.ByteString -> (Lbs.ByteString, Maybe Char)
 takeWhileAndOneMore p xs =
-    uncurry f $ span p xs
+    uncurry f $ Lbsc.span p xs
   where
-    f ys []    = (ys, Nothing)
-    f ys (z:_) = (ys, Just z)
+    f ys (z :< _) = (ys, Just z)
+    f ys _        = (ys, Nothing)
 
 -- | Peek input string to see if the upcoming sequence will end the text.
 --
@@ -291,22 +311,24 @@ takeWhileAndOneMore p xs =
 --
 -- '{{|' is the escaped mustache sequence while '{{!' is comment open tag thus
 -- not ending the text.
-isEndOfText :: String -> Bool
+isEndOfText :: Lbs.ByteString -> Bool
 isEndOfText str =
     nextIsEof str || nextIsLMustache str
   where
-    nextIsEof = null
+    nextIsEof = Lbs.null
     nextIsLMustache s =
         case takeWhileAndOneMore (== '{') s of
-            ([],   _)        -> False
-            ("{{", Just '!') -> False
-            (_,    Just '|') -> False
-            (_,    _)        -> True
+            (Empty,               _)        -> False
+            ('{' :< '{' :< Empty, Just '!') -> False
+            (_,                   Just '|') -> False
+            _                               -> True
 
 -- | Return error for unknown escape sequence.
 unknownEscapeSequence :: Action
-unknownEscapeSequence (_, _, _, str) len =
-    alexError' $ "Unknown escape sequence '" ++ take len str ++ "'"
+unknownEscapeSequence (_, _, str, _) len =
+    alexError' $ concat ["Unknown escape sequence '", Lbsc.unpack str', "'"]
+  where
+    str' = Lbs.take len str
 
 -- | Return error for invalid multiline string literal.
 invalidMultilineString :: Action
@@ -317,8 +339,13 @@ alexEOF :: Alex Lexeme
 alexEOF = return $ Lexeme undefined LEOF Nothing
 
 -- | Remove leading and trailing white space from a string.
-strip :: String -> String
-strip = dropWhileEnd isSpace . dropWhile isSpace
+strip :: Lbs.ByteString -> Lbs.ByteString
+strip =
+    dropWhileEnd isSpace . Lbsc.dropWhile isSpace
+  where
+    dropWhileEnd p bs   = fst $ Lbsc.foldr (acc p) (Lbs.empty, False) bs
+    acc p c (bs, False) = if p c then (bs, False) else (Lbsc.cons c bs, True) 
+    acc _ c (bs, True)  = (Lbsc.cons c bs, True) 
 
 -- | Show line and column number in a string.
 showPosn :: AlexPosn -> String
@@ -327,15 +354,18 @@ showPosn (AlexPn _ line col) = concat [show line, ":", show col]
 -- | Produce a lexer error with readable error message and location information.
 alexError' :: String -> Alex a
 alexError' msg = do
-    (p, c, _, str) <- alexGetInput
+    (p, c, str, _) <- alexGetInput
     alexError $ concat [msg, " at ", showPosn p, locationMsg c str]
   where
-    remainingLine s  = take 30 $ strip $ takeWhile (`notElem` "\r\n") s
-    locationMsg _ "" = " before end of file"
-    locationMsg c s  =
+    takeOneLine     = Lbsc.takeWhile (\c -> c /= '\r' && c /= '\n')
+    remainingLine   = Lbs.take 30 . strip . takeOneLine
+    locationMsg _ Empty = " before end of file"
+    locationMsg c s     =
         case remainingLine s of
-            "" -> " before end of line"
-            m  -> concat [" on character ", show c, " before `", m, "`"]
+            Empty -> " before end of line"
+            m     ->
+                concat
+                [" on character ", show c, " before `", Lbsc.unpack m, "`"]
 
 -- | Modified `alexMonadScan` with state checking mechanism for end of file
 --   and better error message.
@@ -347,8 +377,9 @@ alexMonadScan' = do
         AlexEOF -> leaveLexer
         AlexSkip input' _ -> alexSetInput input' >> alexMonadScan'
         AlexToken input' len f ->
-            alexSetInput input' >> f (ignorePendingBytes input) len
-        AlexError (_, _, _, c:_) ->
+            alexSetInput input' >>
+            f (ignorePendingBytes input) (fromIntegral len)
+        AlexError (_, _, c :< _, _) ->
             alexError' $ "unexpected character '" ++ [c] ++ "'"
         AlexError (_, _, _, _) -> alexError' "unexpected lexer error"
 

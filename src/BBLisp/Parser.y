@@ -1,9 +1,12 @@
 {
+{-# LANGUAGE OverloadedStrings #-}
 module BBLisp.Parser
     (
       -- * Parsing
       runParser
     ) where
+
+import qualified Data.ByteString.Lazy as Lbs
 
 import BBLisp.LexemeClass (LexemeClass(..))
 import BBLisp.Lexer (Alex, Lexeme(..), alexError', alexMonadScan', runAlex)
@@ -93,6 +96,6 @@ happyError (Lexeme _ l _) =
     alexError' $ "parse error at token '" ++ show l ++ "'"
 
 -- | Run the parser to produce syntax tree.
-runParser :: String -> Either String List
+runParser :: Lbs.ByteString -> Either String List
 runParser = flip runAlex parse
 }

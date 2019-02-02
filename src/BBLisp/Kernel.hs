@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module BBLisp.Kernel
     (
       -- * Syntactic Forms
@@ -9,6 +11,8 @@ module BBLisp.Kernel
     , primitives
     ) where
 
+import qualified Data.ByteString as Bs
+import qualified Data.ByteString.Char8 as Bsc
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map
 
@@ -23,7 +27,7 @@ eval b [v@(Decimal _)] = Right (b, v)
 eval b [v@(String _)]  = Right (b, v)
 eval b [Symbol name]   =
     case b !? name of
-        Nothing -> Left $ "Binding for '" ++ name ++ "' not found"
+        Nothing -> Left $ "Binding for '" ++ Bsc.unpack name ++ "' not found"
         Just v  -> Right (b, v)
 eval b l@(s@(Symbol _) : ls) =
     case eval b [s] of
@@ -62,18 +66,18 @@ if' _ (_:_:_:_)     = Left "Too many arguments to if"
 --   With more than one argument, returns the concatenation of the string
 --   representations of each element of `vs`.
 str :: Function
-str []              = Right $ String ""
+str []              = Right $ String Bsc.empty
 str [Boolean True]  = Right $ String "true"
 str [Boolean False] = Right $ String "false"
-str [Integer v]     = Right $ String $ show v
-str [Decimal v]     = Right $ String $ show v
+str [Integer v]     = Right $ String $ Bsc.pack $ show v
+str [Decimal v]     = Right $ String $ Bsc.pack $ show v
 str [s@(String _)]  = Right s
 str [Symbol v]      = Right $ String v
-str [Nil]           = Right $ String ""
+str [Nil]           = Right $ String Bsc.empty
 str [Primitive (Syntax   name _)] = Right $ String name
 str [Primitive (Function name _)] = Right $ String name
 str vs =
-    String . concat . fStrs <$> mapM (str . (:[])) vs
+    String . Bs.concat . fStrs <$> mapM (str . (:[])) vs
   where
     fStrs ls = [ s | String s <- ls ]
 

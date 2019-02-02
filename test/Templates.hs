@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Templates
     (
       -- Templates
@@ -13,42 +15,44 @@ module Templates
     , tempArith
     ) where
 
+import qualified Data.ByteString.Lazy as Lbs
+
 -- Template to test booleans.
-tempBool :: String
+tempBool :: Lbs.ByteString
 tempBool = "This is {{ true }}. That is {{ false }}."
 
 -- Template to test nil.
-tempNil :: String
+tempNil :: Lbs.ByteString
 tempNil = "Nothing is here, except {{ nil }}."
 
 -- Template to test literals.
-tempLit :: String
+tempLit :: Lbs.ByteString
 tempLit = "First {{ 10 }} digits of {{ \"pi\" }} is {{ 3.1415926535 }}."
 
 -- Template to test empty template.
-tempEmpty :: String
+tempEmpty :: Lbs.ByteString
 tempEmpty = ""
 
 -- Template to test comment.
-tempComment1 :: String
+tempComment1 :: Lbs.ByteString
 tempComment1 = "{{! I am invisible }}"
 
 -- Template to test comment block in between texts.
-tempComment2 :: String
+tempComment2 :: Lbs.ByteString
 tempComment2 = "hello {{! I am invisible }}world."
 
 -- Template to test if block.
-tempIf :: String
+tempIf :: Lbs.ByteString
 tempIf = "{{# if (defined? $name) }}Hello {{ $name }}.{{/#}}"
 
 -- Template to test unless block.
-tempUnless :: String
+tempUnless :: Lbs.ByteString
 tempUnless = "{{# unless (defined? $name) }}Hello world.{{/#}}"
 
 -- Template to test with block.
-tempWith :: String
+tempWith :: Lbs.ByteString
 tempWith = "{{# with $list }}{{ $$element }} and {{/#}}"
 
 -- Template to test arithmetic.
-tempArith :: String
+tempArith :: Lbs.ByteString
 tempArith = "The answer is {{ + (- 50 20) 12 }}."

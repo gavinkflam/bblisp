@@ -1,8 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module BBLisp.LexerSpec
     (
       -- * Spec
       spec
     ) where
+
+import qualified Data.ByteString.Lazy as Lbs
 
 import BBLisp.LexemeClass (LexemeClass(..))
 import BBLisp.Lexer (Lexeme(..), alexMonadScan', runAlex)
@@ -59,7 +63,7 @@ spec = do
             runLexer locationTest3 `shouldBe` Left locationTest3Err
 
 -- | Run the lexer to collect lexemes.
-runLexer :: String -> Either String [Lexeme]
+runLexer :: Lbs.ByteString -> Either String [Lexeme]
 runLexer =
     flip runAlex $ collectWhileM notEof alexMonadScan'
   where
@@ -206,7 +210,7 @@ tokensArith =
     ]
 
 -- | Sample template with unknown escape sequence in string literal.
-invalidStringTest1 :: String
+invalidStringTest1 :: Lbs.ByteString
 invalidStringTest1 = "Hello {{ \"world\\i\" }}"
 
 -- | Expected error for `invalidStringTest1`.
@@ -215,7 +219,7 @@ invalidStringTest1Err =
     "Unknown escape sequence '\\i' at 1:18 on character 'i' before `\" }}`"
 
 -- | Sample template with invalid multiline string literal.
-invalidStringTest2 :: String
+invalidStringTest2 :: Lbs.ByteString
 invalidStringTest2 = "Hello {{ \"worl\nd\" }}"
 
 -- | Expected error for `invalidStringTest2`.
@@ -224,7 +228,7 @@ invalidStringTest2Err =
     "Invalid multiline string literal at 2:1 on character '\\n' before `d\" }}`"
 
 -- | Sample template with unclosed code block.
-unclosedTest1 :: String
+unclosedTest1 :: Lbs.ByteString
 unclosedTest1 = "Hello {{ name"
 
 -- | Expected error for `unclosedTest1`.
@@ -232,7 +236,7 @@ unclosedTest1Err :: String
 unclosedTest1Err = "Unclosed code block at end of file"
 
 -- | Sample template with unclosed comment block.
-unclosedTest2 :: String
+unclosedTest2 :: Lbs.ByteString
 unclosedTest2 = "Hello {{! insert name here"
 
 -- | Expected error for `unclosedTest2`.
@@ -240,7 +244,7 @@ unclosedTest2Err :: String
 unclosedTest2Err = "Unclosed comment block at end of file"
 
 -- | Sample template with unclosed section block.
-unclosedTest3 :: String
+unclosedTest3 :: Lbs.ByteString
 unclosedTest3 = "Hello {{# name }}{{ name }}"
 
 -- | Expected error for `unclosedTest3`.
@@ -248,7 +252,7 @@ unclosedTest3Err :: String
 unclosedTest3Err = "Unclosed section block at end of file"
 
 -- | Sample template with unclosed comment block.
-unclosedTest4 :: String
+unclosedTest4 :: Lbs.ByteString
 unclosedTest4 = "Hello {{! comment"
 
 -- | Expected error for `unclosedTest4`.
@@ -256,7 +260,7 @@ unclosedTest4Err :: String
 unclosedTest4Err = "Unclosed comment block at end of file"
 
 -- | Sample template with unclosed string literal.
-unclosedTest5 :: String
+unclosedTest5 :: Lbs.ByteString
 unclosedTest5 = "Hello {{ \"world"
 
 -- | Expected error for `unclosedTest5`.
@@ -264,7 +268,7 @@ unclosedTest5Err :: String
 unclosedTest5Err = "Unclosed string literal at end of file"
 
 -- | Sample template with redundant section block closing tag.
-noBlockToCloseTest1 :: String
+noBlockToCloseTest1 :: Lbs.ByteString
 noBlockToCloseTest1 = "Hello {{# name }}{{ name }}{{/#}}{{/#}}"
 
 -- | Expected error for `noBlockToCloseTest1`.
@@ -272,7 +276,7 @@ noBlockToCloseTest1Err :: String
 noBlockToCloseTest1Err = "No section block to close at 1:40 before end of file"
 
 -- | Sample template with error in the middle of line.
-locationTest1 :: String
+locationTest1 :: Lbs.ByteString
 locationTest1 = "Hello {{ \"world\\_\" }}."
 
 -- | Expected error for `locationTest1`.
@@ -281,7 +285,7 @@ locationTest1Err =
     "Unknown escape sequence '\\_' at 1:18 on character '_' before `\" }}.`"
 
 -- | Sample template with error before end of line.
-locationTest2 :: String
+locationTest2 :: Lbs.ByteString
 locationTest2 = "Hello {{ \"world\\_\nand goodbye."
 
 -- | Expected error for `locationTest2`.
@@ -289,7 +293,7 @@ locationTest2Err :: String
 locationTest2Err = "Unknown escape sequence '\\_' at 1:18 before end of line"
 
 -- | Sample template with error before end of file.
-locationTest3 :: String
+locationTest3 :: Lbs.ByteString
 locationTest3 = "Hello {{ \"world\\_"
 
 -- | Expected error for `locationTest3`.

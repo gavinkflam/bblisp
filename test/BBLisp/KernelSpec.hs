@@ -1,9 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module BBLisp.KernelSpec
     (
       -- * Spec
       spec
     ) where
 
+import qualified Data.ByteString.Char8 as Bsc
 import Data.Map ((!))
 
 import qualified BBLisp.Kernel as K
@@ -21,7 +24,8 @@ spec = do
         it "returns the string representation of Integer" $
             K.str [Integer 42] `shouldBe` Right (String "42")
         it "returns the string representation of Decimal" $
-            K.str [Decimal $ read piStr] `shouldBe` Right (String piStr)
+            K.str [Decimal $ read piStr]
+            `shouldBe` Right (String $ Bsc.pack piStr)
         it "returns the content of String" $
             K.str [String "yolo"] `shouldBe` Right (String "yolo")
         it "returns the name of Symbol" $

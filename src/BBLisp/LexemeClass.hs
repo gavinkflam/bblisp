@@ -4,6 +4,8 @@ module BBLisp.LexemeClass
       LexemeClass(..)
     ) where
 
+import qualified Data.ByteString as Bs
+
 import Data.Scientific (Scientific)
 
 -- | Lexeme tokens.
@@ -15,9 +17,9 @@ data LexemeClass
     | LCloseMustachePound
     | LLParen
     | LRParen
-    | LText       String
-    | LIdentifier String
-    | LString     String
+    | LText       Bs.ByteString
+    | LIdentifier Bs.ByteString
+    | LString     Bs.ByteString
     | LBoolean    Bool
     | LInteger    Integer
     | LDecimal    Scientific
