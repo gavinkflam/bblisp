@@ -22,8 +22,8 @@ import qualified Data.ByteString.Builder as Bsb
 import qualified Data.ByteString.Lazy as Lbs
 import qualified Data.ByteString.Lazy.Char8 as Lbsc
 import Data.Char (isSpace)
-import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 
 import BBLisp.LexemeClass (LexemeClass(..))
 }

@@ -7,7 +7,7 @@ module BBLisp.KernelSpec
     ) where
 
 import qualified Data.ByteString.Char8 as Bsc
-import Data.Map ((!))
+import Data.Map.Strict ((!))
 
 import qualified BBLisp.Kernel as K
 import BBLisp.SyntaxTree (List(..))
