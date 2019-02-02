@@ -1,6 +1,6 @@
 {
 {-# LANGUAGE OverloadedStrings, ViewPatterns, PatternSynonyms #-}
-{-# OPTIONS_GHC -fno-warn-unused-imports #-}
+{-# OPTIONS_GHC -fno-warn-unused-imports -funbox-strict-fields #-}
 -- ^ Generated template contains unused qualified import of Control.Monad.
 --   This should be reviewed in the future.
 
@@ -98,7 +98,7 @@ type Pos    = Maybe AlexPosn
 
 -- | Lexeme containing the position, token and text.
 data Lexeme =
-    Lexeme AlexPosn LexemeClass (Maybe Lbs.ByteString)
+    Lexeme !AlexPosn !LexemeClass !(Maybe Lbs.ByteString)
     deriving (Eq, Show)
 
 -- | Possible lexer states.
@@ -114,14 +114,14 @@ data LexerState
 data AlexUserState = AlexUserState
     {
       -- Used by lexer phase
-      lexerState         :: LexerState
-    , lexerTextValue     :: Bsb.Builder
-    , lexerStringValue   :: Bsb.Builder
-    , lexerSectionDepth  :: Integer
+      lexerState         :: !LexerState
+    , lexerTextValue     :: !Bsb.Builder
+    , lexerStringValue   :: !Bsb.Builder
+    , lexerSectionDepth  :: !Integer
       -- Used by parser phase
-    , parserCollIdent    :: Map String Int
-    , parserCurrentToken :: Lexeme
-    , parserPos          :: Pos
+    , parserCollIdent    :: !(Map String Int)
+    , parserCurrentToken :: !Lexeme
+    , parserPos          :: !Pos
     }
 
 -- | Template lexer state.
@@ -136,7 +136,7 @@ alexInitUserState = AlexUserState
     , lexerStringValue   = mempty
     , lexerSectionDepth  = 0
     , parserCollIdent    = Map.empty
-    , parserCurrentToken = Lexeme undefined LEOF Nothing
+    , parserCurrentToken = Lexeme alexStartPos LEOF Nothing
     , parserPos          = Nothing
     }
 
@@ -336,7 +336,8 @@ invalidMultilineString _ _ = alexError' "Invalid multiline string literal"
 
 -- | EOF lexeme needed by Alex.
 alexEOF :: Alex Lexeme
-alexEOF = return $ Lexeme undefined LEOF Nothing
+alexEOF = Alex $ \s@AlexState{ alex_pos = pos } ->
+    Right (s, Lexeme pos LEOF Nothing)
 
 -- | Remove leading and trailing white space from a string.
 strip :: Lbs.ByteString -> Lbs.ByteString

@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -funbox-strict-fields #-}
+
 module BBLisp.LexemeClass
     (
       -- * Types
@@ -17,10 +19,10 @@ data LexemeClass
     | LCloseMustachePound
     | LLParen
     | LRParen
-    | LText       Bs.ByteString
-    | LIdentifier Bs.ByteString
-    | LString     Bs.ByteString
-    | LBoolean    Bool
-    | LInteger    Integer
-    | LDecimal    Scientific
+    | LText       !Bs.ByteString
+    | LIdentifier !Bs.ByteString
+    | LString     !Bs.ByteString
+    | LBoolean    !Bool
+    | LInteger    !Integer
+    | LDecimal    !Scientific
     deriving (Eq, Show)

@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -funbox-strict-fields #-}
+
 module BBLisp.SyntaxTree
     (
       -- * Types
@@ -25,20 +27,20 @@ type Function = [List] -> Either String List
 
 -- | Recursive list structure to store code and data.
 data List
-    = Boolean   Bool
-    | Integer   Integer
-    | Decimal   Scientific
-    | String    Bs.ByteString
-    | Symbol    Bs.ByteString
+    = Boolean   !Bool
+    | Integer   !Integer
+    | Decimal   !Scientific
+    | String    !Bs.ByteString
+    | Symbol    !Bs.ByteString
     | Nil
-    | Primitive Primitive
-    | List      [List]
+    | Primitive !Primitive
+    | List      ![List]
     deriving (Eq, Show)
 
 -- | Primitive syntactic form and pure function.
 data Primitive
-    = Syntax   Bs.ByteString Syntax
-    | Function Bs.ByteString Function
+    = Syntax   !Bs.ByteString !Syntax
+    | Function !Bs.ByteString !Function
 
 instance Eq Primitive where
     (==) (Syntax n1 _)   (Syntax n2 _)   = n1 == n2
