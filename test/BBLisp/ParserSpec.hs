@@ -6,6 +6,8 @@ module BBLisp.ParserSpec
       spec
     ) where
 
+import qualified Data.Map.Strict as Map
+
 import BBLisp.Parser (runParser)
 import BBLisp.SyntaxTree (List(..))
 import Test.Hspec
@@ -22,6 +24,10 @@ spec =
             astOf (runParser Tmp.tempNil) `shouldBe` astNil
         it "parses template containing literals" $
             astOf (runParser Tmp.tempLit) `shouldBe` astLit
+        it "parses template containing dictionary literal" $
+            astOf (runParser Tmp.tempDict1) `shouldBe` astDict1
+        it "parses template containing nested dictionary" $
+            astOf (runParser Tmp.tempDict2) `shouldBe` astDict2
         it "parses empty template" $
             astOf (runParser Tmp.tempEmpty) `shouldBe` astEmpty
         it "parses template containing only comment" $
@@ -73,6 +79,37 @@ astLit = List
     , String " is "
     , Decimal $ read "3.1415926535"
     , String "."
+    ]
+
+-- | Expected syntax tree for `tempDict1`.
+astDict1 :: List
+astDict1 = List
+    [ Symbol "str"
+    , String "There are "
+    , List
+        [ Dict $ Map.fromList
+            [ ("apples", Integer 5)
+            , ("oranges", Integer 2)
+            ]
+        , String "apples"
+        ]
+    , String " apples."
+    ]
+
+-- | Expected syntax tree for `tempDict2`.
+astDict2 :: List
+astDict2 = List
+    [ Symbol "str"
+    , String "Earth weights "
+    , List
+        [ Symbol "get-in"
+        , Symbol "$planets"
+        , List
+            [ String "earth"
+            , String "weight"
+            ]
+        ]
+    , String " kg."
     ]
 
 -- | Expected syntax tree for `tempEmpty`.

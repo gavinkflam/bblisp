@@ -6,6 +6,8 @@ module Templates
       tempBool
     , tempNil
     , tempLit
+    , tempDict1
+    , tempDict2
     , tempEmpty
     , tempComment1
     , tempComment2
@@ -28,6 +30,14 @@ tempNil = "Nothing is here, except {{ nil }}."
 -- Template to test literals.
 tempLit :: Lbs.ByteString
 tempLit = "First {{ 10 }} digits of {{ \"pi\" }} is {{ 3.1415926535 }}."
+
+-- Template to test dictionary literal.
+tempDict1 :: Lbs.ByteString
+tempDict1 = "There are {{ {\"apples\" 5 \"orange\" 2} \"apples\" }} apples."
+
+-- Template to test nested dictionary.
+tempDict2 :: Lbs.ByteString
+tempDict2 = "Earth weights {{ get-in $planets (\"earth\" \"weight\") }} kg."
 
 -- Template to test empty template.
 tempEmpty :: Lbs.ByteString

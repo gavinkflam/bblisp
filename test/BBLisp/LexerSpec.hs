@@ -24,6 +24,10 @@ spec = do
             tokensOf (runLexer Tmp.tempNil) `shouldBe` tokensNil
         it "tokenizes template containing literals" $
             tokensOf (runLexer Tmp.tempLit) `shouldBe` tokensLit
+        it "tokenizes template containing dictionary literal" $
+            tokensOf (runLexer Tmp.tempDict1) `shouldBe` tokensDict1
+        it "tokenizes template containing nested dictionary" $
+            tokensOf (runLexer Tmp.tempDict2) `shouldBe` tokensDict2
         it "tokenizes empty template" $
             tokensOf (runLexer Tmp.tempEmpty) `shouldBe` tokensEmpty
         it "tokenizes template containing only comment" $
@@ -125,6 +129,39 @@ tokensLit =
     , LDecimal $ read "3.1415926535"
     , LRMustache
     , LText "."
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempDict1`.
+tokensDict1 :: [LexemeClass]
+tokensDict1 =
+    [ LText "There are "
+    , LLMustache
+    , LLBrace
+    , LString "apples"
+    , LInteger 5
+    , LString "oranges"
+    , LInteger 2
+    , LRBrace
+    , LString "apples"
+    , LRMustache
+    , LText " apples."
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempDict2`.
+tokensDict2 :: [LexemeClass]
+tokensDict2 =
+    [ LText "Earth weights "
+    , LLMustache
+    , LIdentifier "get-in"
+    , LIdentifier "$planets"
+    , LLParen
+    , LString "earth"
+    , LString "weight"
+    , LRParen
+    , LRMustache
+    , LText " kg."
     , LEOF
     ]
 

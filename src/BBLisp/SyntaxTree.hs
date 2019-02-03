@@ -32,6 +32,7 @@ data List
     | Decimal   !Scientific
     | String    !Bs.ByteString
     | Symbol    !Bs.ByteString
+    | Dict      !(Map Bs.ByteString List)
     | Nil
     | Primitive !Primitive
     | List      ![List]

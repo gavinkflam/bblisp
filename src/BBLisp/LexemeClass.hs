@@ -19,6 +19,8 @@ data LexemeClass
     | LCloseMustachePound
     | LLParen
     | LRParen
+    | LLBrace
+    | LRBrace
     | LText       !Bs.ByteString
     | LIdentifier !Bs.ByteString
     | LString     !Bs.ByteString
