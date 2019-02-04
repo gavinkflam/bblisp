@@ -102,7 +102,10 @@ astVector1 :: List
 astVector1 = List
     [ Symbol "str"
     , String "Third prime number is "
-    , Vector $ Vector.fromList [Integer 2, Integer 3, Integer 5]
+    , List
+        [ Vector $ Vector.fromList [Integer 2, Integer 3, Integer 5]
+        , Integer 2
+        ]
     , String "."
     ]
 
