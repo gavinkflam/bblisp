@@ -7,6 +7,8 @@ module Templates
     , tempNil
     , tempLit
     , tempStrings
+    , tempVector1
+    , tempVector2
     , tempDict1
     , tempDict2
     , tempEmpty
@@ -35,6 +37,14 @@ tempLit = "First {{ 10 }} digits of {{ \"pi\" }} is {{ 3.1415926535 }}."
 -- Template to test multiple strings.
 tempStrings :: Lbs.ByteString
 tempStrings = "{{ \"Hello\" }} {{ \"world\" }}"
+
+-- Template to test vector literal.
+tempVector1 :: Lbs.ByteString
+tempVector1 = "Third prime number is {{ [2 3 5] 2 }}."
+
+-- Template to test nested vector.
+tempVector2 :: Lbs.ByteString
+tempVector2 = "Grid (1, 2) is {{ get-in [[1 2] [3 4]] [1 2] }}."
 
 -- Template to test dictionary literal.
 tempDict1 :: Lbs.ByteString

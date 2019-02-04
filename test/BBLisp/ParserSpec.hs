@@ -7,6 +7,7 @@ module BBLisp.ParserSpec
     ) where
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Vector as Vector
 
 import BBLisp.Parser (runParser)
 import BBLisp.SyntaxTree (List(..))
@@ -26,6 +27,10 @@ spec =
             astOf (runParser Tmp.tempLit) `shouldBe` astLit
         it "parses template containing multiple strings" $
             astOf (runParser Tmp.tempStrings) `shouldBe` astStrings
+        it "parses template containing vector literal" $
+            astOf (runParser Tmp.tempVector1) `shouldBe` astVector1
+        it "parses template containing nested vector" $
+            astOf (runParser Tmp.tempVector2) `shouldBe` astVector2
         it "parses template containing dictionary literal" $
             astOf (runParser Tmp.tempDict1) `shouldBe` astDict1
         it "parses template containing nested dictionary" $
@@ -90,6 +95,31 @@ astStrings = List
     , String "Hello"
     , String " "
     , String "world"
+    ]
+
+-- | Expected syntax tree for `tempVector1`.
+astVector1 :: List
+astVector1 = List
+    [ Symbol "str"
+    , String "Third prime number is "
+    , Vector $ Vector.fromList [Integer 2, Integer 3, Integer 5]
+    , String "."
+    ]
+
+-- | Expected syntax tree for `tempVector2`.
+astVector2 :: List
+astVector2 = List
+    [ Symbol "str"
+    , String "Grid (1, 2) is "
+    , List
+        [ Symbol "get-in"
+        , Vector $ Vector.fromList
+            [ Vector $ Vector.fromList [Integer 1, Integer 2]
+            , Vector $ Vector.fromList [Integer 3, Integer 4]
+            ]
+        , Vector $ Vector.fromList [Integer 1, Integer 2]
+        ]
+    , String "."
     ]
 
 -- | Expected syntax tree for `tempDict1`.

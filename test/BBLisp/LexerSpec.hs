@@ -26,6 +26,10 @@ spec = do
             tokensOf (runLexer Tmp.tempLit) `shouldBe` tokensLit
         it "tokenizes template containing multiple strings" $
             tokensOf (runLexer Tmp.tempStrings) `shouldBe` tokensStrings
+        it "tokenizes template containing vector literal" $
+            tokensOf (runLexer Tmp.tempVector1) `shouldBe` tokensVector1
+        it "tokenizes template containing nested vector" $
+            tokensOf (runLexer Tmp.tempVector2) `shouldBe` tokensVector2
         it "tokenizes template containing dictionary literal" $
             tokensOf (runLexer Tmp.tempDict1) `shouldBe` tokensDict1
         it "tokenizes template containing nested dictionary" $
@@ -144,6 +148,47 @@ tokensStrings =
     , LLMustache
     , LString "world"
     , LRMustache
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempVector1`.
+tokensVector1 :: [LexemeClass]
+tokensVector1 =
+    [ LText "Third prime number is "
+    , LLMustache
+    , LLBracket
+    , LInteger 2
+    , LInteger 3
+    , LInteger 5
+    , LRBracket
+    , LInteger 2
+    , LRMustache
+    , LText "."
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempVector2`.
+tokensVector2 :: [LexemeClass]
+tokensVector2 =
+    [ LText "Grid (1, 2) is "
+    , LLMustache
+    , LIdentifier "get-in"
+    , LLBracket
+    , LLBracket
+    , LInteger 1
+    , LInteger 2
+    , LRBracket
+    , LLBracket
+    , LInteger 3
+    , LInteger 4
+    , LRBracket
+    , LRBracket
+    , LLBracket
+    , LInteger 1
+    , LInteger 2
+    , LRBracket
+    , LRMustache
+    , LText "."
     , LEOF
     ]
 
