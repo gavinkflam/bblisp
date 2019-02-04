@@ -6,7 +6,9 @@ module BBLisp.Parser
       runParser
     ) where
 
+import qualified Data.ByteString as Bs
 import qualified Data.ByteString.Lazy as Lbs
+import qualified Data.Map.Strict as Map
 
 import BBLisp.LexemeClass (LexemeClass(..))
 import BBLisp.Lexer (Alex, Lexeme(..), alexError', alexMonadScan', runAlex)
@@ -26,6 +28,8 @@ import BBLisp.SyntaxTree (List(..))
     '{{/#}}'  { Lexeme _ LCloseMustachePound _ }
     '('       { Lexeme _ LLParen _ }
     ')'       { Lexeme _ LRParen _ }
+    '{'       { Lexeme _ LLBrace _ }
+    '}'       { Lexeme _ LRBrace _ }
     text      { Lexeme _ (LText $$) _ }
     integer   { Lexeme _ (LInteger $$) _ }
     decimal   { Lexeme _ (LDecimal $$) _ }
@@ -70,6 +74,11 @@ Literal
     | false                           { Boolean False }
     | nil                             { Nil }
     | ident                           { Symbol  $1 }
+    | '{' Dict '}'                    { $2 }
+
+Dict
+    : string List1                    { Dict $ Map.singleton $1 $2 }
+    | Dict string List1               { insertDict $2 $3 $1 }
 {
 -- | Wrapper of lexer.
 lexer :: (Lexeme -> Alex a) -> Alex a
@@ -88,6 +97,11 @@ appendList l1 l2        = List [l1, l2]
 appendSTmp :: List -> List -> List
 appendSTmp (List (Symbol "str" : l1)) l2 = List $ Symbol "str" : l1 ++ [l2]
 appendSTmp l1 l2                         = List [Symbol "str", l1, l2]
+
+-- | Insert a new key and value in the dictionary.
+insertDict :: Bs.ByteString -> List -> List -> List
+insertDict k v (Dict m) = Dict $ Map.insert k v m
+insertDict _ _ _ = error "cannot insert into non-dictionary data type"
 
 -- | Produce a parser error with readable error message and location
 --   information.
