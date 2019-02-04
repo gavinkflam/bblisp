@@ -24,6 +24,8 @@ spec =
             astOf (runParser Tmp.tempNil) `shouldBe` astNil
         it "parses template containing literals" $
             astOf (runParser Tmp.tempLit) `shouldBe` astLit
+        it "parses template containing multiple strings" $
+            astOf (runParser Tmp.tempStrings) `shouldBe` astStrings
         it "parses template containing dictionary literal" $
             astOf (runParser Tmp.tempDict1) `shouldBe` astDict1
         it "parses template containing nested dictionary" $
@@ -79,6 +81,15 @@ astLit = List
     , String " is "
     , Decimal $ read "3.1415926535"
     , String "."
+    ]
+
+-- | Expected syntax tree for `tempStrings`.
+astStrings :: List
+astStrings = List
+    [ Symbol "str"
+    , String "Hello"
+    , String " "
+    , String "world"
     ]
 
 -- | Expected syntax tree for `tempDict1`.

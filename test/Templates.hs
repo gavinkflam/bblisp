@@ -6,6 +6,7 @@ module Templates
       tempBool
     , tempNil
     , tempLit
+    , tempStrings
     , tempDict1
     , tempDict2
     , tempEmpty
@@ -30,6 +31,10 @@ tempNil = "Nothing is here, except {{ nil }}."
 -- Template to test literals.
 tempLit :: Lbs.ByteString
 tempLit = "First {{ 10 }} digits of {{ \"pi\" }} is {{ 3.1415926535 }}."
+
+-- Template to test multiple strings.
+tempStrings :: Lbs.ByteString
+tempStrings = "{{ \"Hello\" }} {{ \"world\" }}"
 
 -- Template to test dictionary literal.
 tempDict1 :: Lbs.ByteString

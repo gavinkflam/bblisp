@@ -24,6 +24,8 @@ spec = do
             tokensOf (runLexer Tmp.tempNil) `shouldBe` tokensNil
         it "tokenizes template containing literals" $
             tokensOf (runLexer Tmp.tempLit) `shouldBe` tokensLit
+        it "tokenizes template containing multiple strings" $
+            tokensOf (runLexer Tmp.tempStrings) `shouldBe` tokensStrings
         it "tokenizes template containing dictionary literal" $
             tokensOf (runLexer Tmp.tempDict1) `shouldBe` tokensDict1
         it "tokenizes template containing nested dictionary" $
@@ -129,6 +131,19 @@ tokensLit =
     , LDecimal $ read "3.1415926535"
     , LRMustache
     , LText "."
+    , LEOF
+    ]
+
+-- | Expected tokens for `tempStrings`.
+tokensStrings :: [LexemeClass]
+tokensStrings =
+    [ LLMustache
+    , LString "Hello"
+    , LRMustache
+    , LText " "
+    , LLMustache
+    , LString "world"
+    , LRMustache
     , LEOF
     ]
 
