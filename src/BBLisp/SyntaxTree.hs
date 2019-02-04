@@ -13,6 +13,7 @@ module BBLisp.SyntaxTree
 import qualified Data.ByteString as Bs
 import qualified Data.ByteString.Char8 as Bsc
 import Data.Map.Strict (Map)
+import Data.Vector (Vector)
 
 import Data.Scientific (Scientific)
 
@@ -36,6 +37,7 @@ data List
     | Nil
     | Primitive !Primitive
     | List      ![List]
+    | Vector    !(Vector List)
     deriving (Eq, Show)
 
 -- | Primitive syntactic form and pure function.

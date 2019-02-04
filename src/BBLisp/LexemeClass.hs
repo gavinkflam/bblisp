@@ -21,6 +21,8 @@ data LexemeClass
     | LRParen
     | LLBrace
     | LRBrace
+    | LLBracket
+    | LRBracket
     | LText       !Bs.ByteString
     | LIdentifier !Bs.ByteString
     | LString     !Bs.ByteString

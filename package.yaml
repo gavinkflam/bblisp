@@ -32,6 +32,7 @@ library:
   - bytestring >= 0.10 && < 0.11
   - containers >= 0.6 && < 0.7
   - scientific >= 0.3 && < 0.4
+  - vector >= 0.12 && < 0.13
 
 executables:
   bblisp-exe:
@@ -57,3 +58,4 @@ tests:
     - bytestring >= 0.10 && < 0.11
     - containers >= 0.6 && < 0.7
     - hspec >= 2.6 && < 2.7
+    - vector >= 0.12 && < 0.13
