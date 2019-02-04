@@ -214,9 +214,13 @@ enterString _ _ = setLexerState SString >> alexMonadScan'
 -- | Leave string state.
 leaveString :: Action
 leaveString input len =
-    setLexerState SLisp >> getLexerStringValue >>= mkString
+    setLexerState SLisp >> getAndClearLexerStringValue >>= mkString
   where
     mkString s = mkL (LString $ builderToBS s) input len
+    getAndClearLexerStringValue = do
+        s <- getLexerStringValue
+        updateLexerStringValue $ const mempty
+        return s
 
 -- | Close section block.
 closeSectionBlock :: Action
