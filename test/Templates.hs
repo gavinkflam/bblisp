@@ -38,7 +38,7 @@ tempStrings = "{{ \"Hello\" }} {{ \"world\" }}"
 
 -- Template to test dictionary literal.
 tempDict1 :: Lbs.ByteString
-tempDict1 = "There are {{ {\"apples\" 5 \"orange\" 2} \"apples\" }} apples."
+tempDict1 = "There are {{ {\"apples\" 5 \"oranges\" 2} \"apples\" }} apples."
 
 -- Template to test nested dictionary.
 tempDict2 :: Lbs.ByteString
