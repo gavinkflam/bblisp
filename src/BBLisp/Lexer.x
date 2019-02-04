@@ -70,6 +70,8 @@ state :-
 <lisp>    \"            { enterString `andBegin` string }
 <lisp>    \(            { mkL LLParen }
 <lisp>    \)            { mkL LRParen }
+<lisp>    \{            { mkL LLBrace }
+<lisp>    \}            { mkL LRBrace }
 <string>  \\n           { addCharToString '\n' }
 <string>  \\r           { addCharToString '\r' }
 <string>  \\t           { addCharToString '\t' }
