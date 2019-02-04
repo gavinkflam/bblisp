@@ -32,6 +32,10 @@ spec =
         it "runs template containing nested dictionary" $
             runTemplateWithTest planets Tmp.tempDict2
             `shouldBe` Right resultDict2
+        it "runs template containing vector literal" $
+            runTemplate Tmp.tempVector1 `shouldBe` Right resultVector1
+        it "runs template containing nested vector" $
+            runTemplate Tmp.tempVector2 `shouldBe` Right resultVector2
         it "runs empty template" $
             runTemplate Tmp.tempEmpty `shouldBe` Right resultEmpty
         it "runs template containing only comment" $
@@ -77,6 +81,14 @@ resultDict1 = "There are 5 apples."
 -- | Expected result for `tempDict2`.
 resultDict2 :: Bs.ByteString
 resultDict2 = "Earth weights 5.97237E24 kg."
+
+-- | Expected result for `tempVector1`.
+resultVector1 :: Bs.ByteString
+resultVector1 = "Third prime number is 5."
+
+-- | Expected result for `tempVector2`.
+resultVector2 :: Bs.ByteString
+resultVector2 = "Grid (1, 2) is 4."
 
 -- | Expected result for `tempEmpty`.
 resultEmpty :: Bs.ByteString
