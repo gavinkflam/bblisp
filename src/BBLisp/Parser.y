@@ -9,6 +9,7 @@ module BBLisp.Parser
 import qualified Data.ByteString as Bs
 import qualified Data.ByteString.Lazy as Lbs
 import qualified Data.Map.Strict as Map
+import qualified Data.Vector as Vector
 
 import BBLisp.LexemeClass (LexemeClass(..))
 import BBLisp.Lexer (Alex, Lexeme(..), alexError', alexMonadScan', runAlex)
@@ -30,6 +31,8 @@ import BBLisp.SyntaxTree (List(..))
     ')'       { Lexeme _ LRParen _ }
     '{'       { Lexeme _ LLBrace _ }
     '}'       { Lexeme _ LRBrace _ }
+    '['       { Lexeme _ LLBracket _ }
+    ']'       { Lexeme _ LRBracket _ }
     text      { Lexeme _ (LText $$) _ }
     integer   { Lexeme _ (LInteger $$) _ }
     decimal   { Lexeme _ (LDecimal $$) _ }
@@ -75,10 +78,15 @@ Literal
     | nil                             { Nil }
     | ident                           { Symbol  $1 }
     | '{' Dict '}'                    { $2 }
+    | '[' Vector ']'                  { $2 }
 
 Dict
     : string List1                    { Dict $ Map.singleton $1 $2 }
     | Dict string List1               { insertDict $2 $3 $1 }
+
+Vector
+    : List1                           { Vector $ Vector.singleton $1 }
+    | Vector List1                    { appendVector $1 $2 }
 {
 -- | Wrapper of lexer.
 lexer :: (Lexeme -> Alex a) -> Alex a
@@ -102,6 +110,11 @@ appendSTmp l1 l2                         = List [Symbol "str", l1, l2]
 insertDict :: Bs.ByteString -> List -> List -> List
 insertDict k v (Dict m) = Dict $ Map.insert k v m
 insertDict _ _ _ = error "cannot insert into non-dictionary data type"
+
+-- | Insert a new element in the vector.
+appendVector :: List -> List -> List
+appendVector (Vector v) ele = Vector $ Vector.snoc v ele
+appendVector _ _ = error "cannot insert into non-vector data type"
 
 -- | Produce a parser error with readable error message and location
 --   information.
