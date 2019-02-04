@@ -29,13 +29,13 @@ eval b [Symbol name]   =
     case b !? name of
         Nothing -> Left $ "Binding for '" ++ Bsc.unpack name ++ "' not found"
         Just v  -> Right (b, v)
-eval b l@(s@(Symbol _) : ls) =
+eval b [l@(List (s@(Symbol _) : ls))] =
     case eval b [s] of
         Left err                   -> Left err
-        Right (_, p@(Primitive _)) -> eval b (p : ls)
+        Right (_, p@(Primitive _)) -> eval b [List (p : ls)]
         Right _                    -> Left $ "Unexpected form: " ++ show l
-eval b (Primitive (Syntax _ f) : ls)   = f b ls
-eval b (Primitive (Function _ f) : ls) =
+eval b [List (Primitive (Syntax _ f) : ls)]   = f b ls
+eval b [List (Primitive (Function _ f) : ls)] =
     case map snd <$> mapM (eval b . (:[])) ls of
         Left err -> Left err
         Right vs -> (,) b <$> f vs
@@ -50,12 +50,9 @@ if' :: Syntax
 if' b [test, then', else'] =
     case eval b [test] of
         Left  err                -> Left err
-        Right (_, Boolean True)  -> eval b $ evalArgs then'
-        Right (_, Boolean False) -> eval b $ evalArgs else'
+        Right (_, Boolean True)  -> eval b [then']
+        Right (_, Boolean False) -> eval b [else']
         Right (_, _)             -> Left "Incorrect type for `test`."
-  where
-      evalArgs (List v) = v
-      evalArgs v        = [v]
 if' b [test, then'] = if' b [test, then', Nil]
 if' _ []            = Left "Too few arguments to if"
 if' _ [_]           = Left "Too few arguments to if"
