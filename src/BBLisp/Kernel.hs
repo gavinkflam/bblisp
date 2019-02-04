@@ -7,8 +7,8 @@ module BBLisp.Kernel
     , if'
       -- * Functions
     , str
-      -- * Primitives
-    , primitives
+      -- * Bindings
+    , bindings
     ) where
 
 import qualified Data.ByteString as Bs
@@ -81,9 +81,9 @@ str vs =
   where
     fStrs ls = [ s | String s <- ls ]
 
--- | Bindings of all primitives in the module.
-primitives :: Bindings
-primitives = Map.fromList
+-- | All primitives in the module.
+bindings :: Bindings
+bindings = Map.fromList
     [ ("eval",        Primitive $ Syntax "eval" eval)
     , ("if",          Primitive $ Syntax "if" if')
     , ("str",         Primitive $ Function "str" str)
