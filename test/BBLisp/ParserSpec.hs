@@ -148,10 +148,7 @@ astDict2 = List
     , List
         [ Symbol "get-in"
         , Symbol "$planets"
-        , List
-            [ String "earth"
-            , String "weight"
-            ]
+        , Vector $ Vector.fromList [String "earth", String "weight"]
         ]
     , String " kg."
     ]

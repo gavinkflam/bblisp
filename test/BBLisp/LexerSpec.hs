@@ -216,10 +216,10 @@ tokensDict2 =
     , LLMustache
     , LIdentifier "get-in"
     , LIdentifier "$planets"
-    , LLParen
+    , LLBracket
     , LString "earth"
     , LString "weight"
-    , LRParen
+    , LRBracket
     , LRMustache
     , LText " kg."
     , LEOF

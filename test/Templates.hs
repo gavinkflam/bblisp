@@ -52,7 +52,7 @@ tempDict1 = "There are {{ {\"apples\" 5 \"oranges\" 2} \"apples\" }} apples."
 
 -- Template to test nested dictionary.
 tempDict2 :: Lbs.ByteString
-tempDict2 = "Earth weights {{ get-in $planets (\"earth\" \"weight\") }} kg."
+tempDict2 = "Earth weights {{ get-in $planets [\"earth\" \"weight\"] }} kg."
 
 -- Template to test empty template.
 tempEmpty :: Lbs.ByteString
