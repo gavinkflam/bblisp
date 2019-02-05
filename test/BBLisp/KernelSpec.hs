@@ -36,19 +36,25 @@ spec = do
         it "eval symbol to resolve binding" $
             evalValTest [Symbol "eval"]
             `shouldBe` Right (Primitive $ Syntax "eval" K.eval)
+        it "returns error for symbol without binding" $
+            evalValTest [Symbol "exec"]
+            `shouldBe` Left "Binding for 'exec' not found"
         it "find the value at a key for the dictionary" $
-            evalValTest [testDict, String "foo"] `shouldBe` Right (Integer 42)
+            evalValTest [List [testDict, String "foo"]]
+            `shouldBe` Right (Integer 42)
         it "returns nil for element not in dictionary" $
-            evalValTest [testDict, String "bar"] `shouldBe` Right Nil
+            evalValTest [List [testDict, String "bar"]]
+            `shouldBe` Right Nil
         it "returns error if key is not a string" $
-            evalValTest [testDict, Integer 1]
+            evalValTest [List [testDict, Integer 1]]
             `shouldBe` Left "Incorrect type for key"
         it "find the value at an index for the vector" $
-            evalValTest [testVector, Integer 4] `shouldBe` Right (Integer 5)
+            evalValTest [List [testVector, Integer 4]]
+            `shouldBe` Right (Integer 5)
         it "returns nil for element not in vector" $
-            evalValTest [testVector, Integer 10] `shouldBe` Right Nil
+            evalValTest [List [testVector, Integer 10]] `shouldBe` Right Nil
         it "returns error if index is not an integer" $
-            evalValTest [testVector, String "4"]
+            evalValTest [List [testVector, String "4"]]
             `shouldBe` Left "Incorrect type for index"
         it "applies binding and return the result" $
             evalValTest [List [Symbol "eval", Integer 1010]]
@@ -58,7 +64,10 @@ spec = do
             `shouldBe` Right (String "1010++")
         it "returns error for unexpected form" $
             evalValTest [Integer 0, Integer 1]
-            `shouldBe` Left "unexpected form (eval 0 1)"
+            `shouldBe` Left "Unexpected form (eval 0 1)"
+        it "returns error for unexpected form" $
+            evalValTest [List [Integer 0, Integer 1]]
+            `shouldBe` Left "Unexpected form (eval (0 1))"
     describe "str" $ do
         it "returns the string representation of true" $
             K.str [Boolean True] `shouldBe` Right (String "true")
