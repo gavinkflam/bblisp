@@ -13,8 +13,8 @@ module BBLisp.Kernel
 
 import qualified Data.ByteString as Bs
 import qualified Data.ByteString.Char8 as Bsc
-import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map
+import qualified Data.Vector as Vector
 
 import BBLisp.SyntaxTree (Bindings, Function, List(..), Primitive(..), Syntax)
 
@@ -25,10 +25,22 @@ eval b [v@(Boolean _)] = Right (b, v)
 eval b [v@(Integer _)] = Right (b, v)
 eval b [v@(Decimal _)] = Right (b, v)
 eval b [v@(String _)]  = Right (b, v)
+eval b [v@(Dict _)]    = Right (b, v)
+eval b [v@(Vector _)]  = Right (b, v)
 eval b [Symbol name]   =
-    case b !? name of
+    case b Map.!? name of
         Nothing -> Left $ "Binding for '" ++ Bsc.unpack name ++ "' not found"
         Just v  -> Right (b, v)
+eval b [List [Dict map', String key]]  =
+    case map' Map.!? key of
+        Nothing -> Right (b, Nil)
+        Just v  -> Right (b, v)
+eval _ [List [Dict _, _]] = Left "Incorrect type for key"
+eval b [List [Vector vector, Integer index]]  =
+    case vector Vector.!? fromIntegral index of
+        Nothing -> Right (b, Nil)
+        Just v  -> Right (b, v)
+eval _ [List [Vector _, _]] = Left "Incorrect type for index"
 eval b [l@(List (s@(Symbol _) : ls))] =
     case eval b [s] of
         Left err                   -> Left err
@@ -39,7 +51,7 @@ eval b [List (Primitive (Function _ f) : ls)] =
     case map snd <$> mapM (eval b . (:[])) ls of
         Left err -> Left err
         Right vs -> (,) b <$> f vs
-eval _ l = Left $ "eval: unexpected form " ++ show l
+eval _ l = Left $ "Unexpected form " ++ show l
 
 -- | Evaluates `test`.
 --
