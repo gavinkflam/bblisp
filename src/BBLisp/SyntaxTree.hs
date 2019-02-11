@@ -3,11 +3,11 @@
 module BBLisp.SyntaxTree
     (
       -- * Types
-      Bindings
-    , Syntax
-    , Function
-    , List(..)
-    , Primitive(..)
+      BBindings
+    , BSyntax
+    , BFunction
+    , BList(..)
+    , BPrimitive(..)
     ) where
 
 import qualified Data.ByteString as Bs
@@ -18,38 +18,38 @@ import Data.Vector (Vector)
 import Data.Scientific (Scientific)
 
 -- | Alias for name to list bindings.
-type Bindings = Map Bs.ByteString List
+type BBindings = Map Bs.ByteString BList
 
 -- | Signature for syntactic form.
-type Syntax   = Bindings -> [List] -> Either String (Bindings, List)
+type BSyntax   = BBindings -> [BList] -> Either String (BBindings, BList)
 
 -- | Signature for pure function.
-type Function = [List] -> Either String List
+type BFunction = [BList] -> Either String BList
 
 -- | Recursive list structure to store code and data.
-data List
-    = Boolean   !Bool
-    | Integer   !Integer
-    | Decimal   !Scientific
-    | String    !Bs.ByteString
-    | Symbol    !Bs.ByteString
-    | Dict      !(Map Bs.ByteString List)
-    | Nil
-    | Primitive !Primitive
-    | List      ![List]
-    | Vector    !(Vector List)
+data BList
+    = BBoolean   !Bool
+    | BInteger   !Integer
+    | BDecimal   !Scientific
+    | BString    !Bs.ByteString
+    | BSymbol    !Bs.ByteString
+    | BDict      !(Map Bs.ByteString BList)
+    | BNil
+    | BPrimitive !BPrimitive
+    | BList      ![BList]
+    | BVector    !(Vector BList)
     deriving (Eq, Show)
 
 -- | Primitive syntactic form and pure function.
-data Primitive
-    = Syntax   !Bs.ByteString !Syntax
-    | Function !Bs.ByteString !Function
+data BPrimitive
+    = BSyntax   !Bs.ByteString !BSyntax
+    | BFunction !Bs.ByteString !BFunction
 
-instance Eq Primitive where
-    (==) (Syntax n1 _)   (Syntax n2 _)   = n1 == n2
-    (==) (Function n1 _) (Function n2 _) = n1 == n2
-    (==) _                _              = False
+instance Eq BPrimitive where
+    (==) (BSyntax n1 _)   (BSyntax n2 _)   = n1 == n2
+    (==) (BFunction n1 _) (BFunction n2 _) = n1 == n2
+    (==) _                _                = False
 
-instance Show Primitive where
-    show (Syntax n _)   = "<# syntax " ++ Bsc.unpack n ++ ">"
-    show (Function n _) = "<# function " ++ Bsc.unpack n ++ ">"
+instance Show BPrimitive where
+    show (BSyntax n _)   = "<# syntax " ++ Bsc.unpack n ++ ">"
+    show (BFunction n _) = "<# function " ++ Bsc.unpack n ++ ">"

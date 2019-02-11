@@ -10,7 +10,7 @@ import qualified Data.ByteString as Bs
 import qualified Data.Map.Strict as Map
 
 import BBLisp (builtinBindings, runTemplate, runTemplateWith)
-import BBLisp.SyntaxTree (List(..))
+import BBLisp.SyntaxTree (BList(..))
 import Test.Hspec
 
 import qualified Templates as Tmp
@@ -52,11 +52,11 @@ spec =
             runTemplate Tmp.tempArith `shouldBe` Right resultArith
   where
     runTemplateWithTest = runTemplateWith . Map.union builtinBindings
-    planets = Map.singleton "$planets" $ Dict $ Map.singleton "earth" $
-        Dict $ Map.singleton "weight" $ String "5.97237E24"
-    name = Map.singleton "$name" $ String "Gumball"
+    planets = Map.singleton "$planets" $ BDict $ Map.singleton "earth" $
+        BDict $ Map.singleton "weight" $ BString "5.97237E24"
+    name = Map.singleton "$name" $ BString "Gumball"
     words' = Map.singleton "$list" $
-        List [String "fire", String "ground", String "metal"]
+        BList [BString "fire", BString "ground", BString "metal"]
 
 -- | Expected result for `tempBool`.
 resultBool :: Bs.ByteString

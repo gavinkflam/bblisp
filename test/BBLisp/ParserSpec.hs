@@ -10,7 +10,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Vector as Vector
 
 import BBLisp.Parser (runParser)
-import BBLisp.SyntaxTree (List(..))
+import BBLisp.SyntaxTree (BList(..))
 import Test.Hspec
 
 import qualified Templates as Tmp
@@ -51,184 +51,184 @@ spec =
             astOf (runParser Tmp.tempArith) `shouldBe` astArith
 
 -- | Extract syntax tree from result.
-astOf :: Either String List -> List
+astOf :: Either String BList -> BList
 astOf (Left msg) = error $ "Parser error: " ++ msg
 astOf (Right t)  = t
 
 -- | Expected syntax tree for `tempBool`.
-astBool :: List
-astBool = List
-    [ Symbol "str"
-    , String "This is "
-    , Boolean True
-    , String ". That is "
-    , Boolean False
-    , String "."
+astBool :: BList
+astBool = BList
+    [ BSymbol "str"
+    , BString "This is "
+    , BBoolean True
+    , BString ". That is "
+    , BBoolean False
+    , BString "."
     ]
 
 -- | Expected syntax tree for `tempNil`.
-astNil :: List
-astNil = List
-    [ Symbol "str"
-    , String "Nothing is here, except "
-    , Nil
-    , String "."
+astNil :: BList
+astNil = BList
+    [ BSymbol "str"
+    , BString "Nothing is here, except "
+    , BNil
+    , BString "."
     ]
 
 -- | Expected syntax tree for `tempLit`.
-astLit :: List
-astLit = List
-    [ Symbol "str"
-    , String "First "
-    , Integer 10
-    , String " digits of "
-    , String "pi"
-    , String " is "
-    , Decimal $ read "3.1415926535"
-    , String "."
+astLit :: BList
+astLit = BList
+    [ BSymbol "str"
+    , BString "First "
+    , BInteger 10
+    , BString " digits of "
+    , BString "pi"
+    , BString " is "
+    , BDecimal $ read "3.1415926535"
+    , BString "."
     ]
 
 -- | Expected syntax tree for `tempStrings`.
-astStrings :: List
-astStrings = List
-    [ Symbol "str"
-    , String "Hello"
-    , String " "
-    , String "world"
+astStrings :: BList
+astStrings = BList
+    [ BSymbol "str"
+    , BString "Hello"
+    , BString " "
+    , BString "world"
     ]
 
 -- | Expected syntax tree for `tempVector1`.
-astVector1 :: List
-astVector1 = List
-    [ Symbol "str"
-    , String "Third prime number is "
-    , List
-        [ Vector $ Vector.fromList [Integer 2, Integer 3, Integer 5]
-        , Integer 2
+astVector1 :: BList
+astVector1 = BList
+    [ BSymbol "str"
+    , BString "Third prime number is "
+    , BList
+        [ BVector $ Vector.fromList [BInteger 2, BInteger 3, BInteger 5]
+        , BInteger 2
         ]
-    , String "."
+    , BString "."
     ]
 
 -- | Expected syntax tree for `tempVector2`.
-astVector2 :: List
-astVector2 = List
-    [ Symbol "str"
-    , String "Grid (1, 2) is "
-    , List
-        [ Symbol "get-in"
-        , Vector $ Vector.fromList
-            [ Vector $ Vector.fromList [Integer 1, Integer 2]
-            , Vector $ Vector.fromList [Integer 3, Integer 4]
+astVector2 :: BList
+astVector2 = BList
+    [ BSymbol "str"
+    , BString "Grid (1, 2) is "
+    , BList
+        [ BSymbol "get-in"
+        , BVector $ Vector.fromList
+            [ BVector $ Vector.fromList [BInteger 1, BInteger 2]
+            , BVector $ Vector.fromList [BInteger 3, BInteger 4]
             ]
-        , Vector $ Vector.fromList [Integer 1, Integer 2]
+        , BVector $ Vector.fromList [BInteger 1, BInteger 2]
         ]
-    , String "."
+    , BString "."
     ]
 
 -- | Expected syntax tree for `tempDict1`.
-astDict1 :: List
-astDict1 = List
-    [ Symbol "str"
-    , String "There are "
-    , List
-        [ Dict $ Map.fromList
-            [ ("apples", Integer 5)
-            , ("oranges", Integer 2)
+astDict1 :: BList
+astDict1 = BList
+    [ BSymbol "str"
+    , BString "There are "
+    , BList
+        [ BDict $ Map.fromList
+            [ ("apples", BInteger 5)
+            , ("oranges", BInteger 2)
             ]
-        , String "apples"
+        , BString "apples"
         ]
-    , String " apples."
+    , BString " apples."
     ]
 
 -- | Expected syntax tree for `tempDict2`.
-astDict2 :: List
-astDict2 = List
-    [ Symbol "str"
-    , String "Earth weights "
-    , List
-        [ Symbol "get-in"
-        , Symbol "$planets"
-        , Vector $ Vector.fromList [String "earth", String "weight"]
+astDict2 :: BList
+astDict2 = BList
+    [ BSymbol "str"
+    , BString "Earth weights "
+    , BList
+        [ BSymbol "get-in"
+        , BSymbol "$planets"
+        , BVector $ Vector.fromList [BString "earth", BString "weight"]
         ]
-    , String " kg."
+    , BString " kg."
     ]
 
 -- | Expected syntax tree for `tempEmpty`.
-astEmpty :: List
-astEmpty = List [Symbol "str"]
+astEmpty :: BList
+astEmpty = BList [BSymbol "str"]
 
 -- | Expected syntax tree for `tempComment1`.
-astComment1 :: List
-astComment1 = List [Symbol "str"]
+astComment1 :: BList
+astComment1 = BList [BSymbol "str"]
 
 -- | Expected syntax tree for `tempComment2`.
-astComment2 :: List
-astComment2 = List
-    [ Symbol "str"
-    , String "hello world."
+astComment2 :: BList
+astComment2 = BList
+    [ BSymbol "str"
+    , BString "hello world."
     ]
 
 -- | Expected syntax tree for `tempIf`.
-astIf :: List
-astIf = List
-    [ Symbol "str"
-    , List
-        [ Symbol "if"
-        , List
-            [ Symbol "defined?"
-            , Symbol "$name"
+astIf :: BList
+astIf = BList
+    [ BSymbol "str"
+    , BList
+        [ BSymbol "if"
+        , BList
+            [ BSymbol "defined?"
+            , BSymbol "$name"
             ]
-        , List
-            [ Symbol "str"
-            , String "Hello "
-            , Symbol "$name"
-            , String "."
+        , BList
+            [ BSymbol "str"
+            , BString "Hello "
+            , BSymbol "$name"
+            , BString "."
             ]
         ]
     ]
 
 -- | Expected syntax tree for `tempUnless`.
-astUnless :: List
-astUnless = List
-    [ Symbol "str"
-    , List
-        [ Symbol "unless"
-        , List
-            [ Symbol "defined?"
-            , Symbol "$name"
+astUnless :: BList
+astUnless = BList
+    [ BSymbol "str"
+    , BList
+        [ BSymbol "unless"
+        , BList
+            [ BSymbol "defined?"
+            , BSymbol "$name"
             ]
-        , String "Hello world."
+        , BString "Hello world."
         ]
     ]
 
 -- | Expected syntax tree for `tempWith`.
-astWith :: List
-astWith = List
-    [ Symbol "str"
-    , List
-        [ Symbol "with"
-        , Symbol "$list"
-        , List
-            [ Symbol "str"
-            , Symbol "$$element"
-            , String " and "
+astWith :: BList
+astWith = BList
+    [ BSymbol "str"
+    , BList
+        [ BSymbol "with"
+        , BSymbol "$list"
+        , BList
+            [ BSymbol "str"
+            , BSymbol "$$element"
+            , BString " and "
             ]
         ]
     ]
 
 -- | Expected syntax tree for `tempArith`.
-astArith :: List
-astArith = List
-    [ Symbol "str"
-    , String "The answer is "
-    , List
-        [ Symbol "+"
-        , List
-            [ Symbol "-"
-            , Integer 50
-            , Integer 20
+astArith :: BList
+astArith = BList
+    [ BSymbol "str"
+    , BString "The answer is "
+    , BList
+        [ BSymbol "+"
+        , BList
+            [ BSymbol "-"
+            , BInteger 50
+            , BInteger 20
             ]
-        , Integer 12
+        , BInteger 12
         ]
-    , String "."
+    , BString "."
     ]

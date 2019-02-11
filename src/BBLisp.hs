@@ -12,18 +12,18 @@ import qualified Data.ByteString.Lazy as Lbs
 
 import qualified BBLisp.Kernel as Ker
 import BBLisp.Parser (runParser)
-import BBLisp.SyntaxTree (Bindings, List(..))
+import BBLisp.SyntaxTree (BBindings, BList(..))
 
 -- | All builtin bindings shipped with BBLisp.
-builtinBindings :: Bindings
+builtinBindings :: BBindings
 builtinBindings = Ker.bindings
 
 -- | Run a template with custom bindings.
-runTemplateWith :: Bindings -> Lbs.ByteString -> Either String Bs.ByteString
+runTemplateWith :: BBindings -> Lbs.ByteString -> Either String Bs.ByteString
 runTemplateWith bindings template =
     extractString =<< Ker.eval bindings =<< (: []) <$> runParser template
   where
-    extractString (_, String str) = Right str
+    extractString (_, BString str) = Right str
     extractString (_, v) = Left $ "Expected string, but got `" ++ show v ++ "`."
 
 -- | Run a template with builtin bindings.
