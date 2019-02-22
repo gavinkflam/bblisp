@@ -110,6 +110,22 @@ spec = do
         it "returns error for too many arguments" $
             K.if' K.bindings [BBoolean True, BInteger 1, BInteger 2, BInteger 3]
             `shouldBe` Left "Too many arguments to if"
+    describe "get" $ do
+        it "returns the value mapped to the key" $
+            K.get [testDict, BString "foo"] `shouldBe` Right (BInteger 42)
+        it "returns nil for key not present" $
+            K.get [testDict, BString "bar"] `shouldBe` Right BNil
+        it "returns error for too few arguments" $
+            K.get [testDict] `shouldBe` Left "Too few arguments to get"
+        it "returns error for too many arguments" $
+            K.get [testDict, BString "bar", BString "lol"]
+            `shouldBe` Left "Too many arguments to get"
+        it "returns error for incorrect data type for dictionary" $
+            K.get [BNil, BString "foo"]
+            `shouldBe` Left "Incorrect type for `dictionary`"
+        it "returns error for incorrect data type for key" $
+            K.get [testDict, BSymbol "foo"]
+            `shouldBe` Left "Incorrect type for `key`"
   where
     evalValTest t = snd <$> K.eval K.bindings t
     piStr         = "3.1415926535"

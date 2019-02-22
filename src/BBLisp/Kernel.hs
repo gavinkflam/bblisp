@@ -7,6 +7,7 @@ module BBLisp.Kernel
     , if'
       -- * Functions
     , str
+    , get
       -- * Bindings
     , bindings
     ) where
@@ -91,10 +92,15 @@ str vs =
   where
     fStrs ls = [ s | BString s <- ls ]
 
+-- | Returns the value mapped to the key. Returns nil if key not present.
+get :: BFunction
+get = undefined
+
 -- | All primitives in the module.
 bindings :: BBindings
 bindings = Map.fromList
     [ ("eval",        BPrimitive $ BSyntax "eval" eval)
     , ("if",          BPrimitive $ BSyntax "if" if')
     , ("str",         BPrimitive $ BFunction "str" str)
+    , ("get",         BPrimitive $ BFunction "get" get)
     ]
