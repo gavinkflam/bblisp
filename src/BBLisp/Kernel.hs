@@ -94,7 +94,9 @@ if' _ (_:_:_:_)     = Left "Too many arguments to if"
 --
 --   Returns false if otherwise.
 eq :: BFunction
-eq = undefined
+eq []  = Left "Too few arguments to ="
+eq [_] = Left "Too few arguments to ="
+eq (headValue : others) = Right $ BBoolean $ all (== headValue) others
 
 -- | With one argument, returns the string representation of `v`.
 --
