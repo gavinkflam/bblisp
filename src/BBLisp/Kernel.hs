@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module BBLisp.Kernel
     (
@@ -16,10 +16,25 @@ module BBLisp.Kernel
 import qualified Data.ByteString as Bs
 import qualified Data.ByteString.Char8 as Bsc
 import qualified Data.Map.Strict as Map
+import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 
 import BBLisp.SyntaxTree
     (BBindings, BFunction, BList(..), BPrimitive(..), BSyntax)
+
+-- | Pattern synonym for empty vectors.
+pattern Empty :: Vector a
+pattern Empty <- (Vector.null -> True)
+
+-- | Split a vector into it's head and tail if applicable.
+uncons :: Vector a -> Maybe (a, Vector a)
+uncons Empty = Nothing
+uncons v     = Just (Vector.unsafeHead v, Vector.unsafeTail v)
+
+-- | Pattern synonym for vector uncons.
+infixr 5 :<|
+pattern (:<|) :: a -> Vector a -> Vector a
+pattern x :<| xs <- (uncons -> Just (x, xs))
 
 -- | Evaluate an expression or definition.
 eval :: BSyntax
@@ -106,7 +121,15 @@ get arguments
 
 -- | Returns the value mapped to the key. Returns nil if key not present.
 getIn :: BFunction
-getIn = undefined
+getIn [BDict _,              BVector Empty]           = Right BNil
+getIn [dictionary@(BDict _), BVector (key :<| Empty)] = get [dictionary, key]
+getIn [dictionary@(BDict _), BVector (key :<| tailKeys)]  =
+    (\v -> getIn [v, BVector tailKeys]) =<< get [dictionary, key]
+getIn [_, BVector _] = Right BNil
+getIn [_, _]         = Left "Keys should be vector"
+getIn arguments
+    | length (take 3 arguments) > 2 = Left "Too many arguments to get-in"
+    | otherwise                     = Left "Too few arguments to get-in"
 
 -- | All primitives in the module.
 bindings :: BBindings
