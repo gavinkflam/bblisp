@@ -8,6 +8,7 @@ module BBLisp.Kernel
       -- * Functions
     , str
     , get
+    , getIn
       -- * Bindings
     , bindings
     ) where
@@ -103,6 +104,10 @@ get arguments
     | length (take 3 arguments) > 2 = Left "Too many arguments to get"
     | otherwise                     = Left "Too few arguments to get"
 
+-- | Returns the value mapped to the key. Returns nil if key not present.
+getIn :: BFunction
+getIn = undefined
+
 -- | All primitives in the module.
 bindings :: BBindings
 bindings = Map.fromList
@@ -110,4 +115,5 @@ bindings = Map.fromList
     , ("if",          BPrimitive $ BSyntax "if" if')
     , ("str",         BPrimitive $ BFunction "str" str)
     , ("get",         BPrimitive $ BFunction "get" get)
+    , ("get-in",      BPrimitive $ BFunction "get-in" getIn)
     ]

@@ -122,14 +122,80 @@ spec = do
         it "returns nil for incorrect data type for key" $
             K.get [testDict, BSymbol "foo"] `shouldBe` Right BNil
         it "returns error for too many arguments" $
-            K.get [testDict, BString "bar", BString "lol"]
+            K.get [testDict, BString "bar", BString "lorem"]
             `shouldBe` Left "Too many arguments to get"
+    describe "get-in" $ do
+        it "returns the value in the first level of the dictionary" $
+            K.getIn [testDict , BVector $ Vector.fromList [BString "foo"]]
+            `shouldBe` Right (BInteger 42)
+        it "returns the value in the second level of the dictionary" $
+            K.getIn
+                [ testDict
+                , BVector $ Vector.fromList
+                    [ BString "lorem"
+                    , BString "dolor"
+                    ]
+                ]
+                `shouldBe` Right (BString "amet")
+        it "returns nil for key not present in the second level" $
+            K.getIn
+                [ testDict
+                , BVector $ Vector.fromList
+                    [ BString "lorem"
+                    , BString "consectetur"
+                    ]
+                ]
+                `shouldBe` Right BNil
+        it "returns nil for key not present in the first level" $
+            K.getIn
+                [ testDict
+                , BVector $ Vector.fromList
+                    [ BString "ipsum"
+                    ]
+                ]
+                `shouldBe` Right BNil
+        it "returns nil for key not present in the first and second level" $
+            K.getIn
+                [ testDict
+                , BVector $ Vector.fromList
+                    [ BString "ipsum"
+                    , BString "dolor"
+                    ]
+                ]
+                `shouldBe` Right BNil
+        it "returns nil for incorrect data type for dictionary" $
+            K.getIn [BNil, BVector $ Vector.fromList [BString "foo"]]
+            `shouldBe` Right BNil
+        it "returns nil for incorrect data type for key" $
+            K.getIn
+                [ testDict
+                , BVector $ Vector.fromList
+                    [ BSymbol "lorem"
+                    , BSymbol "consectetur"
+                    ]
+                ]
+                `shouldBe` Right BNil
+        it "returns nil for non-vector key sequence" $
+            K.getIn [testDict, BNil] `shouldBe` Left "Keys should be vector"
+        it "returns error for too few arguments" $
+            K.getIn [testDict] `shouldBe` Left "Too few arguments to get-in"
+        it "returns error for too many arguments" $
+            K.getIn [testDict, BString "bar", BString "lorem"]
+            `shouldBe` Left "Too many arguments to get-in"
   where
     evalValTest t = snd <$> K.eval K.bindings t
     piStr         = "3.1415926535"
     piDec         = BDecimal $ read $ Bsc.unpack piStr
     testDict      = BDict $ Map.fromList
-        [("foo", BInteger 42), ("lol", BInteger 101)]
+        [ ("foo", BInteger 42)
+        ,
+            ( "lorem"
+            , BDict $ Map.fromList
+                [ ("ipsum", BInteger 50)
+                , ("dolor", BString "amet")
+                ]
+            )
+        ]
     testVector    = BVector $ Vector.fromList
         [BInteger 1, BInteger 1, BInteger 2, BInteger 3, BInteger 5]
     strTestList   = [BInteger 1, BSymbol "world", BString "."]
