@@ -94,7 +94,15 @@ str vs =
 
 -- | Returns the value mapped to the key. Returns nil if key not present.
 get :: BFunction
-get = undefined
+get [BDict dictionary, BString key] =
+    case Map.lookup key dictionary of
+        Nothing  -> Right BNil
+        Just val -> Right val
+get [BDict _, _] = Left "Incorrect type for `key`"
+get [_,       _] = Left "Incorrect type for `dictionary`"
+get arguments
+    | length (take 3 arguments) > 2 = Left "Too many arguments to get"
+    | otherwise                     = Left "Too few arguments to get"
 
 -- | All primitives in the module.
 bindings :: BBindings
