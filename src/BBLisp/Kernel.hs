@@ -6,6 +6,7 @@ module BBLisp.Kernel
       eval
     , if'
       -- * Functions
+    , eq
     , str
     , get
     , getIn
@@ -88,6 +89,13 @@ if' _ []            = Left "Too few arguments to if"
 if' _ [_]           = Left "Too few arguments to if"
 if' _ (_:_:_:_)     = Left "Too many arguments to if"
 
+-- | Returns true if the arguments are of the same type and the values are
+--   equivalent.
+--
+--   Returns false if otherwise.
+eq :: BFunction
+eq = undefined
+
 -- | With one argument, returns the string representation of `v`.
 --
 --   With more than one argument, returns the concatenation of the string
@@ -119,7 +127,9 @@ get arguments
     | length (take 3 arguments) > 2 = Left "Too many arguments to get"
     | otherwise                     = Left "Too few arguments to get"
 
--- | Returns the value mapped to the key. Returns nil if key not present.
+-- | Returns the value in a nested dictionary using a sequence of keys.
+--
+--   Returns nil if key not present.
 getIn :: BFunction
 getIn [BDict _,              BVector Empty]           = Right BNil
 getIn [dictionary@(BDict _), BVector (key :<| Empty)] = get [dictionary, key]
@@ -136,6 +146,7 @@ bindings :: BBindings
 bindings = Map.fromList
     [ ("eval",        BPrimitive $ BSyntax "eval" eval)
     , ("if",          BPrimitive $ BSyntax "if" if')
+    , ("=",           BPrimitive $ BFunction "=" eq)
     , ("str",         BPrimitive $ BFunction "str" str)
     , ("get",         BPrimitive $ BFunction "get" get)
     , ("get-in",      BPrimitive $ BFunction "get-in" getIn)

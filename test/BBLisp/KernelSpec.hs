@@ -68,6 +68,68 @@ spec = do
         it "returns error for unexpected form" $
             evalValTest [BList [BInteger 0, BInteger 1]]
             `shouldBe` Left "Unexpected form (eval (0 1))"
+    describe "=" $ do
+        it "returns true for nils" $
+            K.eq [BNil, BNil] `shouldBe` Right (BBoolean True)
+        it "returns true for equivalent booleans" $
+            K.eq [BBoolean False, BBoolean False]
+            `shouldBe` Right (BBoolean True)
+        it "returns false for nonequivalent booleans" $
+            K.eq [BBoolean True, BBoolean False]
+            `shouldBe` Right (BBoolean False)
+        it "returns true for equivalent integers" $
+            K.eq [BInteger 42, BInteger 42] `shouldBe` Right (BBoolean True)
+        it "returns false for nonequivalent integers" $
+            K.eq [BInteger 30, BInteger 42] `shouldBe` Right (BBoolean False)
+        it "returns true for equivalent decimals" $
+            K.eq [BDecimal $ read "3.14", BDecimal $ read "3.14"]
+            `shouldBe` Right (BBoolean True)
+        it "returns false for nonequivalent decimals" $
+            K.eq [BDecimal $ read "3.14", BDecimal $ read "1.618"]
+            `shouldBe` Right (BBoolean False)
+        it "returns true for equivalent strings" $
+            K.eq [BString "foo", BString "foo"]
+            `shouldBe` Right (BBoolean True)
+        it "returns false for nonequivalent strings" $
+            K.eq [BString "foo", BString "bar"]
+            `shouldBe` Right (BBoolean False)
+        it "returns true for equivalent symbols" $
+            K.eq [BSymbol "foo", BSymbol "foo"]
+            `shouldBe` Right (BBoolean True)
+        it "returns false for nonequivalent symbols" $
+            K.eq [BSymbol "foo", BSymbol "bar"]
+            `shouldBe` Right (BBoolean False)
+        it "returns true for equivalent dictionaries" $
+            K.eq [testDict, testDict] `shouldBe` Right (BBoolean True)
+        it "returns false for nonequivalent dictionaries" $
+            K.eq [testDict, BDict mempty] `shouldBe` Right (BBoolean False)
+        it "returns true for equivalent vectors" $
+            K.eq [testVector, testVector] `shouldBe` Right (BBoolean True)
+        it "returns false for nonequivalent vectors" $
+            K.eq [testVector, BVector mempty] `shouldBe` Right (BBoolean False)
+        it "returns true for equivalent lists" $
+            K.eq [BList [BInteger 1], BList [BInteger 1]]
+            `shouldBe` Right (BBoolean True)
+        it "returns false for nonequivalent lists" $
+            K.eq [BList [BInteger 1], BList [BInteger 2]]
+            `shouldBe` Right (BBoolean False)
+        it "returns true for equivalent primitives" $
+            K.eq [K.bindings ! "=", K.bindings ! "="]
+            `shouldBe` Right (BBoolean True)
+        it "returns false for nonequivalent primitives" $
+            K.eq [K.bindings ! "=", K.bindings ! "eval"]
+            `shouldBe` Right (BBoolean False)
+        it "returns true for more than three equivalent integers" $
+            K.eq [BInteger 42, BInteger 42, BInteger 42]
+            `shouldBe` Right (BBoolean True)
+        it "returns false for more than three nonequivalent integers" $
+            K.eq [BInteger 30, BInteger 30, BInteger 42]
+            `shouldBe` Right (BBoolean False)
+        it "returns false for unmatched types" $
+            K.eq [BInteger 42, BDecimal $ read "42"]
+            `shouldBe` Right (BBoolean False)
+        it "returns error for too few arguments" $
+            K.eq [BInteger 42] `shouldBe` Left "Too few arguments to ="
     describe "str" $ do
         it "returns the string representation of true" $
             K.str [BBoolean True] `shouldBe` Right (BString "true")
