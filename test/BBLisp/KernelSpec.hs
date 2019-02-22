@@ -117,15 +117,13 @@ spec = do
             K.get [testDict, BString "bar"] `shouldBe` Right BNil
         it "returns error for too few arguments" $
             K.get [testDict] `shouldBe` Left "Too few arguments to get"
+        it "returns nil for incorrect data type for dictionary" $
+            K.get [BNil, BString "foo"] `shouldBe` Right BNil
+        it "returns nil for incorrect data type for key" $
+            K.get [testDict, BSymbol "foo"] `shouldBe` Right BNil
         it "returns error for too many arguments" $
             K.get [testDict, BString "bar", BString "lol"]
             `shouldBe` Left "Too many arguments to get"
-        it "returns error for incorrect data type for dictionary" $
-            K.get [BNil, BString "foo"]
-            `shouldBe` Left "Incorrect type for `dictionary`"
-        it "returns error for incorrect data type for key" $
-            K.get [testDict, BSymbol "foo"]
-            `shouldBe` Left "Incorrect type for `key`"
   where
     evalValTest t = snd <$> K.eval K.bindings t
     piStr         = "3.1415926535"
