@@ -138,28 +138,28 @@ spec = do
         it "adds a decimal, return the same decimal" $
             K.add [BDecimal $ read "3.14"]
             `shouldBe` Right (BDecimal $ read "3.14")
-        it "adds two integers, return the result as integer" $
+        it "adds two integers, return result as integer" $
             K.add [BInteger 42, BInteger 30] `shouldBe` Right (BInteger 72)
-        it "adds two decimals, return the result as decimal" $
+        it "adds two decimals, return result as decimal" $
             K.add [BDecimal $ read "3.14", BDecimal $ read "1.618"]
             `shouldBe` Right (BDecimal $ read "4.758")
-        it "adds a decimal with an integer, return the result as decimal" $
+        it "adds a decimal with an integer, return result as decimal" $
             K.add [BDecimal $ read "3.14", BInteger 42]
             `shouldBe` Right (BDecimal $ read "45.14")
-        it "adds an integer with a decimal, return the result as decimal" $
+        it "adds an integer with a decimal, return result as decimal" $
             K.add [BInteger 42, BDecimal $ read "3.14"]
             `shouldBe` Right (BDecimal $ read "45.14")
-        it "adds three integers, return the result as integer" $
+        it "adds three integers, return result as integer" $
             K.add [BInteger 42, BInteger 30, BInteger 58]
             `shouldBe` Right (BInteger 130)
-        it "adds three decimals, return the result as decimal" $
+        it "adds three decimals, return result as decimal" $
             K.add
                 [ BDecimal $ read "3.14"
                 , BDecimal $ read "1.618"
                 , BDecimal $ read "1.41421"
                 ]
             `shouldBe` Right (BDecimal $ read "6.17221")
-        it "adds an integer with two decimals, return the result as decimal" $
+        it "adds an integer with two decimals, return result as decimal" $
             K.add
                 [ BInteger 42
                 , BDecimal $ read "1.618"
@@ -168,6 +168,45 @@ spec = do
             `shouldBe` Right (BDecimal $ read "45.03221")
         it "reports error for non-numerical arguments" $
             K.add [BString "42"]
+            `shouldBe` Left "Arguments should be integers or decimals"
+    describe "-" $ do
+        it "subtracts nothing, return zero" $
+            K.subtract' [] `shouldBe` Right (BInteger 0)
+        it "subtracts an integer, return the negated integer" $
+            K.subtract' [BInteger 42] `shouldBe` Right (BInteger $ -42)
+        it "subtracts a decimal, return the negated decimal" $
+            K.subtract' [BDecimal $ read "3.14"]
+            `shouldBe` Right (BDecimal $ read "-3.14")
+        it "subtracts two integers, return result as integer" $
+            K.subtract' [BInteger 42, BInteger 30] `shouldBe` Right (BInteger 12)
+        it "subtracts two decimals, return result as decimal" $
+            K.subtract' [BDecimal $ read "3.14", BDecimal $ read "1.618"]
+            `shouldBe` Right (BDecimal $ read "1.522")
+        it "subtracts a decimal with an integer, return result as decimal" $
+            K.subtract' [BDecimal $ read "3.14", BInteger 42]
+            `shouldBe` Right (BDecimal $ read "-38.86")
+        it "subtracts an integer with a decimal, return result as decimal" $
+            K.subtract' [BInteger 42, BDecimal $ read "3.14"]
+            `shouldBe` Right (BDecimal $ read "38.86")
+        it "subtracts three integers, return result as integer" $
+            K.subtract' [BInteger 42, BInteger 30, BInteger 58]
+            `shouldBe` Right (BInteger $ -46)
+        it "subtracts three decimals, return result as decimal" $
+            K.subtract'
+                [ BDecimal $ read "3.14"
+                , BDecimal $ read "1.618"
+                , BDecimal $ read "1.41421"
+                ]
+            `shouldBe` Right (BDecimal $ read "0.10779")
+        it "subtracts an integer with two decimals, return result as decimal" $
+            K.subtract'
+                [ BInteger 42
+                , BDecimal $ read "1.618"
+                , BDecimal $ read "1.41421"
+                ]
+            `shouldBe` Right (BDecimal $ read "38.96779")
+        it "reports error for non-numerical arguments" $
+            K.subtract' [BString "42"]
             `shouldBe` Left "Arguments should be integers or decimals"
     describe "str" $ do
         it "returns the string representation of true" $

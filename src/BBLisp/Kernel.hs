@@ -8,6 +8,7 @@ module BBLisp.Kernel
       -- * Functions
     , eq
     , add
+    , subtract'
     , str
     , get
     , getIn
@@ -100,9 +101,6 @@ eq [_] = Left "Too few arguments to ="
 eq (headValue : others) = Right $ BBoolean $ all (== headValue) others
 
 -- | Returns the sum of the numbers. (+) returns 0.
---
---   Adding integers together result in an integer.
---   Adding decimal with any numbers result in a decimal.
 add :: BFunction
 add [] = Right $ BInteger 0
 add arguments
@@ -119,6 +117,12 @@ add arguments
     addNumeric (BDecimal l) (BInteger r) = BDecimal $ l + fromIntegral r
     addNumeric (BDecimal l) (BDecimal r) = BDecimal $ l + r
     addNumeric _ _ = error "Arguments should be integers or decimals"
+
+-- | Subtracts the numbers from the first number.
+--
+--   (+) returns 0. (- x) returns the negation of x.
+subtract' :: BFunction
+subtract' = undefined
 
 -- | With one argument, returns the string representation of `v`.
 --
@@ -172,6 +176,7 @@ bindings = Map.fromList
     , ("if",          BPrimitive $ BSyntax "if" if')
     , ("=",           BPrimitive $ BFunction "=" eq)
     , ("+",           BPrimitive $ BFunction "+" add)
+    , ("-",           BPrimitive $ BFunction "-" subtract')
     , ("str",         BPrimitive $ BFunction "str" str)
     , ("get",         BPrimitive $ BFunction "get" get)
     , ("get-in",      BPrimitive $ BFunction "get-in" getIn)
