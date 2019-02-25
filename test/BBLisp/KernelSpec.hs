@@ -130,6 +130,45 @@ spec = do
             `shouldBe` Right (BBoolean False)
         it "returns error for too few arguments" $
             K.eq [BInteger 42] `shouldBe` Left "Too few arguments to ="
+    describe "+" $ do
+        it "adds nothing, return zero" $
+            K.add [] `shouldBe` Right (BInteger 0)
+        it "adds an integer, return the same integer" $
+            K.add [BInteger 42] `shouldBe` Right (BInteger 42)
+        it "adds a decimal, return the same decimal" $
+            K.add [BDecimal $ read "3.14"]
+            `shouldBe` Right (BDecimal $ read "3.14")
+        it "adds two integers, return the result as integer" $
+            K.add [BInteger 42, BInteger 30] `shouldBe` Right (BInteger 72)
+        it "adds two decimals, return the result as decimal" $
+            K.add [BDecimal $ read "3.14", BDecimal $ read "1.618"]
+            `shouldBe` Right (BDecimal $ read "4.758")
+        it "adds a decimal with an integer, return the result as decimal" $
+            K.add [BDecimal $ read "3.14", BInteger 42]
+            `shouldBe` Right (BDecimal $ read "45.14")
+        it "adds an integer with a decimal, return the result as decimal" $
+            K.add [BInteger 42, BDecimal $ read "3.14"]
+            `shouldBe` Right (BDecimal $ read "45.14")
+        it "adds three integers, return the result as integer" $
+            K.add [BInteger 42, BInteger 30, BInteger 58]
+            `shouldBe` Right (BInteger 130)
+        it "adds three decimals, return the result as decimal" $
+            K.add
+                [ BDecimal $ read "3.14"
+                , BDecimal $ read "1.618"
+                , BDecimal $ read "1.41421"
+                ]
+            `shouldBe` Right (BDecimal $ read "6.17221")
+        it "adds an integer with two decimals, return the result as decimal" $
+            K.add
+                [ BInteger 42
+                , BDecimal $ read "1.618"
+                , BDecimal $ read "1.41421"
+                ]
+            `shouldBe` Right (BDecimal $ read "45.03221")
+        it "reports error for non-numerical arguments" $
+            K.add [BString "42"]
+            `shouldBe` Left "Arguments should be integers or decimals"
     describe "str" $ do
         it "returns the string representation of true" $
             K.str [BBoolean True] `shouldBe` Right (BString "true")

@@ -7,6 +7,7 @@ module BBLisp.Kernel
     , if'
       -- * Functions
     , eq
+    , add
     , str
     , get
     , getIn
@@ -98,6 +99,13 @@ eq []  = Left "Too few arguments to ="
 eq [_] = Left "Too few arguments to ="
 eq (headValue : others) = Right $ BBoolean $ all (== headValue) others
 
+-- | Returns the sum of the numbers. (+) returns 0.
+--
+--   Adding integers together result in an integer.
+--   Adding decimal with any numbers result in a decimal.
+add :: BFunction
+add = undefined
+
 -- | With one argument, returns the string representation of `v`.
 --
 --   With more than one argument, returns the concatenation of the string
@@ -149,6 +157,7 @@ bindings = Map.fromList
     [ ("eval",        BPrimitive $ BSyntax "eval" eval)
     , ("if",          BPrimitive $ BSyntax "if" if')
     , ("=",           BPrimitive $ BFunction "=" eq)
+    , ("+",           BPrimitive $ BFunction "+" add)
     , ("str",         BPrimitive $ BFunction "str" str)
     , ("get",         BPrimitive $ BFunction "get" get)
     , ("get-in",      BPrimitive $ BFunction "get-in" getIn)
