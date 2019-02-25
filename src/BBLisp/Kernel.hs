@@ -122,7 +122,28 @@ add arguments
 --
 --   (+) returns 0. (- x) returns the negation of x.
 subtract' :: BFunction
-subtract' = undefined
+subtract' [] = Right $ BInteger 0
+subtract' arguments@(number : tailNumbers)
+    | all isNumeric arguments =
+        case tailNumbers of
+            [] -> Right $ negateNumeric number
+            _  -> Right $ foldr (flip subtractNumeric) number tailNumbers
+    | otherwise = Left "Arguments should be integers or decimals"
+  where
+    -- Check if the value is of numeric types.
+    isNumeric (BInteger _) = True
+    isNumeric (BDecimal _) = True
+    isNumeric _ = False
+    -- Negate a numeric value.
+    negateNumeric (BInteger value) = BInteger $ negate value
+    negateNumeric (BDecimal value) = BDecimal $ negate value
+    negateNumeric _ = error "Argument should be integers or decimals"
+    -- Add two numeric value. Return integer if both values are integer.
+    subtractNumeric (BInteger l) (BInteger r) = BInteger $ l - r
+    subtractNumeric (BInteger l) (BDecimal r) = BDecimal $ fromIntegral l - r
+    subtractNumeric (BDecimal l) (BInteger r) = BDecimal $ l - fromIntegral r
+    subtractNumeric (BDecimal l) (BDecimal r) = BDecimal $ l - r
+    subtractNumeric _ _ = error "Arguments should be integers or decimals"
 
 -- | With one argument, returns the string representation of `v`.
 --
