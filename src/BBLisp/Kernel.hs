@@ -104,7 +104,21 @@ eq (headValue : others) = Right $ BBoolean $ all (== headValue) others
 --   Adding integers together result in an integer.
 --   Adding decimal with any numbers result in a decimal.
 add :: BFunction
-add = undefined
+add [] = Right $ BInteger 0
+add arguments
+    | all isNumeric arguments = Right $ foldr addNumeric (BInteger 0) arguments
+    | otherwise = Left "Arguments should be integers or decimals"
+  where
+    -- Check if the value is of numeric types.
+    isNumeric (BInteger _) = True
+    isNumeric (BDecimal _) = True
+    isNumeric _ = False
+    -- Add two numeric value. Return integer if both values are integer.
+    addNumeric (BInteger l) (BInteger r) = BInteger $ l + r
+    addNumeric (BInteger l) (BDecimal r) = BDecimal $ fromIntegral l + r
+    addNumeric (BDecimal l) (BInteger r) = BDecimal $ l + fromIntegral r
+    addNumeric (BDecimal l) (BDecimal r) = BDecimal $ l + r
+    addNumeric _ _ = error "Arguments should be integers or decimals"
 
 -- | With one argument, returns the string representation of `v`.
 --
