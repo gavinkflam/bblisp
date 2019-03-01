@@ -47,7 +47,10 @@ eval b [v@(BInteger _)] = Right (b, v)
 eval b [v@(BDecimal _)] = Right (b, v)
 eval b [v@(BString _)]  = Right (b, v)
 eval b [v@(BDict _)]    = Right (b, v)
-eval b [v@(BVector _)]  = Right (b, v)
+eval b [BVector v] =
+    case Vector.mapM (eval b . (:[])) v of
+        Left err     -> Left err
+        Right result -> Right (b, BVector $ Vector.map snd result)
 eval b [BSymbol name]   =
     case b Map.!? name of
         Nothing -> Left $ "Binding for '" ++ Bsc.unpack name ++ "' not found"
