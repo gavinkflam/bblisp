@@ -31,8 +31,30 @@ spec = do
             evalValTest [BString "yolo"] `shouldBe` Right (BString "yolo")
         it "eval dictionary as idempotent" $
             evalValTest [testDict] `shouldBe` Right testDict
-        it "eval vector as idempotent" $
+        it "eval vector of literals as idempotent" $
             evalValTest [testVector] `shouldBe` Right testVector
+        it "eval nested lists within vector" $
+            evalValTest
+                [ BList
+                    [ BSymbol "get-in"
+                    , testDict
+                    , BVector $ Vector.fromList
+                        [ BList
+                            [ BSymbol "str"
+                            , BString "lo"
+                            , BList
+                                [ BSymbol "str"
+                                , BString "r"
+                                , BString "em"
+                                ]
+                            ]
+                        , BList
+                            [ BSymbol "str"
+                            , BString "ipsum"
+                            ]
+                        ]
+                    ]
+                ] `shouldBe` Right (BInteger 50)
         it "eval symbol to resolve binding" $
             evalValTest [BSymbol "eval"]
             `shouldBe` Right (BPrimitive $ BSyntax "eval" K.eval)
