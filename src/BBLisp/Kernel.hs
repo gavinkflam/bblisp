@@ -5,6 +5,7 @@ module BBLisp.Kernel
       -- * Syntactic Forms
       eval
     , if'
+    , unless'
       -- * Functions
     , eq
     , add
@@ -93,6 +94,18 @@ if' b [test, then'] = if' b [test, then', BNil]
 if' _ []            = Left "Too few arguments to if"
 if' _ [_]           = Left "Too few arguments to if"
 if' _ (_:_:_:_)     = Left "Too many arguments to if"
+
+-- | Evaluates `test`.
+--
+--   If it produces `false`, evaluate `then` and returns the result.
+--   If it produces `true`, evaluate `else` and returns the result, or returns
+--   `nil` when there are no `else`.
+unless' :: BSyntax
+unless' b [test, then', else'] = if' b [test, else', then']
+unless' b [test, then'] = if' b [test, BNil, then']
+unless' _ []            = Left "Too few arguments to unless"
+unless' _ [_]           = Left "Too few arguments to unless"
+unless' _ (_:_:_:_)     = Left "Too many arguments to unless"
 
 -- | Returns true if the arguments are of the same type and the values are
 --   equivalent.
@@ -198,6 +211,7 @@ bindings :: BBindings
 bindings = Map.fromList
     [ ("eval",        BPrimitive $ BSyntax "eval" eval)
     , ("if",          BPrimitive $ BSyntax "if" if')
+    , ("unless",      BPrimitive $ BSyntax "unless" unless')
     , ("=",           BPrimitive $ BFunction "=" eq)
     , ("+",           BPrimitive $ BFunction "+" add)
     , ("-",           BPrimitive $ BFunction "-" subtract')

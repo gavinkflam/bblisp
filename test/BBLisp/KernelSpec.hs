@@ -272,6 +272,25 @@ spec = do
         it "returns error for too many arguments" $
             K.if' K.bindings [BBoolean True, BInteger 1, BInteger 2, BInteger 3]
             `shouldBe` Left "Too many arguments to if"
+    describe "unless'" $ do
+        it "evaluates and returns then when test is evaluated to false" $
+            snd <$> unlessTest (BBoolean False) `shouldBe` Right (BString "33")
+        it "evaluates and returns else when test is evaluated to true" $
+            snd <$> unlessTest (BBoolean True) `shouldBe` Right (BString "truthy")
+        it "evaluates and returns nil when test is evaluated to true and there are no else" $
+            snd <$> K.unless' K.bindings [BBoolean True, BInteger 0]
+            `shouldBe` Right BNil
+        it "returns error for incorrect data type" $
+            K.unless' K.bindings [BInteger 0, BString "yes"]
+            `shouldBe` Left "Incorrect type for `test`."
+        it "returns error for no arguments" $
+            K.unless' K.bindings [] `shouldBe` Left "Too few arguments to unless"
+        it "returns error for too few arguments" $
+            K.unless' K.bindings [BBoolean True]
+            `shouldBe` Left "Too few arguments to unless"
+        it "returns error for too many arguments" $
+            K.unless' K.bindings [BBoolean True, BInteger 1, BInteger 2, BInteger 3]
+            `shouldBe` Left "Too many arguments to unless"
     describe "get" $ do
         it "returns the value mapped to the key" $
             K.get [testDict, BString "foo"] `shouldBe` Right (BInteger 42)
@@ -365,4 +384,9 @@ spec = do
         [ test
         , BList [BSymbol "str", BInteger 42]
         , BList [BSymbol "str", BString "falsy"]
+        ]
+    unlessTest test   = K.unless' K.bindings
+        [ test
+        , BList [BSymbol "str", BInteger 33]
+        , BList [BSymbol "str", BString "truthy"]
         ]
