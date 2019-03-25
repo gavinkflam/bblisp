@@ -363,6 +363,31 @@ spec = do
         it "returns error for too many arguments" $
             K.getIn [testDict, BString "bar", BString "lorem"]
             `shouldBe` Left "Too many arguments to get-in"
+    describe "empty?" $ do
+        it "returns true for empty vector" $
+            K.empty [BVector mempty] `shouldBe` Right (BBoolean True)
+        it "returns false for non-empty vector" $
+            K.empty [testVector] `shouldBe` Right (BBoolean False)
+        it "returns true for empty dictionary" $
+            K.empty [BDict mempty] `shouldBe` Right (BBoolean True)
+        it "returns false for non-empty dictionary" $
+            K.empty [testDict] `shouldBe` Right (BBoolean False)
+        it "returns true for empty list" $
+            K.empty [BList []] `shouldBe` Right (BBoolean True)
+        it "returns false for non-empty vector" $
+            K.empty [BList [BNil]] `shouldBe` Right (BBoolean False)
+        it "returns true for empty string" $
+            K.empty [BString ""] `shouldBe` Right (BBoolean True)
+        it "returns false for non-empty string" $
+            K.empty [BString "foo"] `shouldBe` Right (BBoolean False)
+        it "returns error for too few arguments" $
+            K.empty [] `shouldBe` Left "Too few arguments to empty?"
+        it "returns error for too many arguments" $
+            K.empty [BString "bar", BString "lorem"]
+            `shouldBe` Left "Too many arguments to empty?"
+        it "returns error for incorrect data type" $
+            K.empty [BInteger 1] `shouldBe`
+            Left "Unknown form, expecting (empty? vector/dict/list/string)"
   where
     evalValTest t = snd <$> K.eval K.bindings t
     piStr         = "3.1415926535"

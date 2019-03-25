@@ -13,6 +13,7 @@ module BBLisp.Kernel
     , str
     , get
     , getIn
+    , empty
       -- * Bindings
     , bindings
     ) where
@@ -206,6 +207,26 @@ getIn arguments
     | length (take 3 arguments) > 2 = Left "Too many arguments to get-in"
     | otherwise                     = Left "Too few arguments to get-in"
 
+-- | Returns true if the argument has no items.
+--
+--   Vector, dictionary, list or string are supported.
+empty :: BFunction
+empty [BVector vector]
+    | Vector.null vector = Right $ BBoolean True
+    | otherwise          = Right $ BBoolean False
+empty [BDict dict]
+    | Map.null dict      = Right $ BBoolean True
+    | otherwise          = Right $ BBoolean False
+empty [BList []]         = Right $ BBoolean True
+empty [BList _]          = Right $ BBoolean False
+empty [BString ""]       = Right $ BBoolean True
+empty [BString _]        = Right $ BBoolean False
+empty [_]                =
+    Left "Unknown form, expecting (empty? vector/dict/list/string)"
+empty arguments
+    | length (take 2 arguments) > 1 = Left "Too many arguments to empty?"
+    | otherwise                     = Left "Too few arguments to empty?"
+
 -- | All primitives in the module.
 bindings :: BBindings
 bindings = Map.fromList
@@ -218,4 +239,5 @@ bindings = Map.fromList
     , ("str",         BPrimitive $ BFunction "str" str)
     , ("get",         BPrimitive $ BFunction "get" get)
     , ("get-in",      BPrimitive $ BFunction "get-in" getIn)
+    , ("empty?",      BPrimitive $ BFunction "empty?" empty)
     ]
