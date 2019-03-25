@@ -103,18 +103,18 @@ if' _ (_:_:_:_)     = Left "Too many arguments to if"
 --   `nil` when there are no `else`.
 unless' :: BSyntax
 unless' b [test, then', else'] = if' b [test, else', then']
-unless' b [test, then'] = if' b [test, BNil, then']
-unless' _ []            = Left "Too few arguments to unless"
-unless' _ [_]           = Left "Too few arguments to unless"
-unless' _ (_:_:_:_)     = Left "Too many arguments to unless"
+unless' b [test, then']        = if' b [test, BNil, then']
+unless' _ []                   = Left "Too few arguments to unless"
+unless' _ [_]                  = Left "Too few arguments to unless"
+unless' _ (_:_:_:_)            = Left "Too many arguments to unless"
 
 -- | Returns true if the arguments are of the same type and the values are
 --   equivalent.
 --
 --   Returns false if otherwise.
 eq :: BFunction
-eq []  = Left "Too few arguments to ="
-eq [_] = Left "Too few arguments to ="
+eq []                   = Left "Too few arguments to ="
+eq [_]                  = Left "Too few arguments to ="
 eq (headValue : others) = Right $ BBoolean $ all (== headValue) others
 
 -- | Returns the sum of the numbers. (+) returns 0.
@@ -127,7 +127,7 @@ add arguments
     -- Check if the value is of numeric types.
     isNumeric (BInteger _) = True
     isNumeric (BDecimal _) = True
-    isNumeric _ = False
+    isNumeric _            = False
     -- Add two numeric value. Return integer if both values are integer.
     addNumeric (BInteger l) (BInteger r) = BInteger $ l + r
     addNumeric (BInteger l) (BDecimal r) = BDecimal $ fromIntegral l + r
@@ -150,7 +150,7 @@ subtract' arguments@(number : tailNumbers)
     -- Check if the value is of numeric types.
     isNumeric (BInteger _) = True
     isNumeric (BDecimal _) = True
-    isNumeric _ = False
+    isNumeric _            = False
     -- Negate a numeric value.
     negateNumeric (BInteger value) = BInteger $ negate value
     negateNumeric (BDecimal value) = BDecimal $ negate value
