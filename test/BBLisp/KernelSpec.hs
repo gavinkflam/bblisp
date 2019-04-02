@@ -299,6 +299,32 @@ spec = do
         it "returns error for unknown forms" $
             K.not' [BInteger 42, BInteger 33] `shouldBe`
                 Left "Unknown form, expecting `(not boolean)`"
+    describe "and" $ do
+        it "returns true for all true" $
+            K.bAnd [BBoolean True, BBoolean True] `shouldBe`
+                Right (BBoolean True)
+        it "returns false for any non-true elements" $
+            K.bAnd [BBoolean True, BBoolean False] `shouldBe`
+                Right (BBoolean False)
+        it "returns error for zero arguments" $
+            K.bAnd [] `shouldBe`
+                Left "Unknown form, expecting `(and boolean...)`"
+        it "returns error for type mismatch" $
+            K.bAnd [BInteger 1] `shouldBe`
+                Left "Unknown form, expecting `(and boolean...)`"
+    describe "or" $ do
+        it "returns true for any true elements" $
+            K.bOr [BBoolean False, BBoolean True] `shouldBe`
+                Right (BBoolean True)
+        it "returns false for all false" $
+            K.bOr [BBoolean False, BBoolean False] `shouldBe`
+                Right (BBoolean False)
+        it "returns error for zero arguments" $
+            K.bOr [] `shouldBe`
+                Left "Unknown form, expecting `(or boolean...)`"
+        it "returns error for type mismatch" $
+            K.bOr [BInteger 1] `shouldBe`
+                Left "Unknown form, expecting `(or boolean...)`"
     describe "get" $ do
         it "returns the value mapped to the key" $
             K.get [testDict, BString "foo"] `shouldBe` Right (BInteger 42)

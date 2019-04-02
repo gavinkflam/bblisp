@@ -7,6 +7,8 @@ module BBLisp.Kernel
     , if'
     , unless'
       -- * Functions
+    , bAnd
+    , bOr
     , not'
     , eq
     , add
@@ -109,6 +111,30 @@ unless' b [test, then']        = if' b [test, BNil, then']
 unless' _ []                   = Left "Too few arguments to unless"
 unless' _ [_]                  = Left "Too few arguments to unless"
 unless' _ (_:_:_:_)            = Left "Too many arguments to unless"
+
+-- | Returns true if all of the arguments are true.
+--
+--   Returns false if otherwise.
+bAnd :: BFunction
+bAnd values
+    | not (null values) && all isBoolean values =
+        Right $ BBoolean $ all (== BBoolean True) values
+    | otherwise = Left "Unknown form, expecting `(and boolean...)`"
+  where
+    isBoolean (BBoolean _) = True
+    isBoolean _            = False
+
+-- | Returns true if any of the arguments is true.
+--
+--   Returns false if otherwise.
+bOr :: BFunction
+bOr values
+    | not (null values) && all isBoolean values =
+        Right $ BBoolean $ elem (BBoolean True) values
+    | otherwise = Left "Unknown form, expecting `(or boolean...)`"
+  where
+    isBoolean (BBoolean _) = True
+    isBoolean _            = False
 
 -- | Returns the boolean complement of the argument.
 not' :: BFunction
@@ -250,6 +276,8 @@ bindings = Map.fromList
     [ ("eval",        BPrimitive $ BSyntax "eval" eval)
     , ("if",          BPrimitive $ BSyntax "if" if')
     , ("unless",      BPrimitive $ BSyntax "unless" unless')
+    , ("and",         BPrimitive $ BFunction "and" bAnd)
+    , ("or",          BPrimitive $ BFunction "or" bOr)
     , ("not",         BPrimitive $ BFunction "not" not')
     , ("=",           BPrimitive $ BFunction "=" eq)
     , ("+",           BPrimitive $ BFunction "+" add)
