@@ -14,6 +14,7 @@ module BBLisp.Kernel
     , str
     , get
     , getIn
+    , bMemberQ
     , empty
       -- * Bindings
     , bindings
@@ -214,6 +215,15 @@ getIn arguments
     | length (take 3 arguments) > 2 = Left "Too many arguments to get-in"
     | otherwise                     = Left "Too few arguments to get-in"
 
+-- | Returns true if the given value is a member of the dictionary or vector.
+--
+--   Returns false if otherwise.
+bMemberQ :: BFunction
+bMemberQ [BVector vector, value] = Right $ BBoolean $ Vector.elem value vector
+bMemberQ [BDict dict, value]     =
+    Right $ BBoolean $ elem value $ Map.elems dict
+bMemberQ _ = Left "Unknown form, expecting `(member? dict/vector any)`"
+
 -- | Returns true if the argument has no items.
 --
 --   Vector, dictionary, list or string are supported.
@@ -247,5 +257,6 @@ bindings = Map.fromList
     , ("str",         BPrimitive $ BFunction "str" str)
     , ("get",         BPrimitive $ BFunction "get" get)
     , ("get-in",      BPrimitive $ BFunction "get-in" getIn)
+    , ("member?",     BPrimitive $ BFunction "member?" bMemberQ)
     , ("empty?",      BPrimitive $ BFunction "empty?" empty)
     ]

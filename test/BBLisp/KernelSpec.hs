@@ -371,6 +371,28 @@ spec = do
         it "returns error for too many arguments" $
             K.getIn [testDict, BString "bar", BString "lorem"]
             `shouldBe` Left "Too many arguments to get-in"
+    describe "member?" $ do
+        it "returns true for member of dictionary" $
+            K.bMemberQ [testDict, BInteger 42] `shouldBe`
+                Right (BBoolean True)
+        it "returns false for non-member of dictionary" $
+            K.bMemberQ [testDict, BBoolean True] `shouldBe`
+                Right (BBoolean False)
+        it "returns false for empty dictionary" $
+            K.bMemberQ [BDict mempty, BInteger 1] `shouldBe`
+                Right (BBoolean False)
+        it "returns true for member of vector" $
+            K.bMemberQ [testVector, BInteger 5] `shouldBe`
+                Right (BBoolean True)
+        it "returns false for non-member of vector" $
+            K.bMemberQ [testVector, BBoolean True] `shouldBe`
+                Right (BBoolean False)
+        it "returns false for empty vector" $
+            K.bMemberQ [BVector mempty, BInteger 1] `shouldBe`
+                Right (BBoolean False)
+        it "returns error for unknown forms" $
+            K.bMemberQ [BInteger 42, BInteger 33] `shouldBe`
+                Left "Unknown form, expecting `(member? dict/vector any)`"
     describe "empty?" $ do
         it "returns true for empty vector" $
             K.empty [BVector mempty] `shouldBe` Right (BBoolean True)
