@@ -7,6 +7,7 @@ module BBLisp.Kernel
     , if'
     , unless'
       -- * Functions
+    , not'
     , eq
     , add
     , subtract'
@@ -107,6 +108,12 @@ unless' b [test, then']        = if' b [test, BNil, then']
 unless' _ []                   = Left "Too few arguments to unless"
 unless' _ [_]                  = Left "Too few arguments to unless"
 unless' _ (_:_:_:_)            = Left "Too many arguments to unless"
+
+-- | Returns the boolean complement of the argument.
+not' :: BFunction
+not' [BBoolean True]  = Right $ BBoolean False
+not' [BBoolean False] = Right $ BBoolean True
+not' _                = Left "Unknown form, expecting `(not boolean)`"
 
 -- | Returns true if the arguments are of the same type and the values are
 --   equivalent.
@@ -233,6 +240,7 @@ bindings = Map.fromList
     [ ("eval",        BPrimitive $ BSyntax "eval" eval)
     , ("if",          BPrimitive $ BSyntax "if" if')
     , ("unless",      BPrimitive $ BSyntax "unless" unless')
+    , ("not",         BPrimitive $ BFunction "not" not')
     , ("=",           BPrimitive $ BFunction "=" eq)
     , ("+",           BPrimitive $ BFunction "+" add)
     , ("-",           BPrimitive $ BFunction "-" subtract')

@@ -291,6 +291,14 @@ spec = do
         it "returns error for too many arguments" $
             K.unless' K.bindings [BBoolean True, BInteger 1, BInteger 2, BInteger 3]
             `shouldBe` Left "Too many arguments to unless"
+    describe "not" $ do
+        it "returns true for false" $
+            K.not' [BBoolean True] `shouldBe` Right (BBoolean False)
+        it "returns false for true" $
+            K.not' [BBoolean False] `shouldBe` Right (BBoolean True)
+        it "returns error for unknown forms" $
+            K.not' [BInteger 42, BInteger 33] `shouldBe`
+                Left "Unknown form, expecting `(not boolean)`"
     describe "get" $ do
         it "returns the value mapped to the key" $
             K.get [testDict, BString "foo"] `shouldBe` Right (BInteger 42)
