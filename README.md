@@ -26,6 +26,148 @@ There {{# pluralize $n }}is{{/#}} {{ $n }} {{# pluralize $n }}apple{{/#}}.
 * Able to customize the language with syntactic forms and functions.
 * Able to precompile templates for even faster rendering.
 
+## Kernel Documentation
+
+### Logical
+
+#### and
+
+`(and values:boolean...):boolean`
+
+Returns true if all of the arguments are true.
+
+Returns false if otherwise.
+
+#### not
+
+`(not value:boolean):boolean`
+
+Returns the boolean complement of the argument.
+
+#### or
+
+`(or values:boolean...):boolean`
+
+Returns true if any of the arguments is true.
+
+Returns false if otherwise.
+
+#### =
+
+`(= values:any...):boolean`
+
+Returns true if the arguments are of the same type and the values are
+equivalent.
+
+Returns false if otherwise.
+
+### Arithmetic
+
+#### +
+
+`(+):integer`
+
+`(+ values:integer...):integer`
+
+`(+ values:integer/decimal...):decimal`
+
+Returns the sum of the numbers. (+) returns 0.
+
+#### -
+
+`(-):integer`
+
+`(- values:integer...):integer`
+
+`(- values:integer/decimal...):decimal`
+
+Subtracts the numbers from the first number.
+
+(-) returns 0. (- x) returns the negation of x.
+
+### String
+
+#### str
+
+`(str):string`
+
+`(str value:any):string`
+
+`(str values:any...):string`
+
+With one argument, returns the string representation of `v`.
+
+With more than one argument, returns the concatenation of the string
+representations of each element.
+
+### Collection
+
+#### empty?
+
+`(empty? collection:vector/dict/list/string):boolean`
+
+Returns true if the argument has no items.
+
+Vector, dictionary, list or string are supported.
+
+#### get
+
+`(get dictionary:dict key:string):any`
+
+Returns the value mapped to the key. Returns nil if key not present.
+
+#### get-in
+
+`(get-in dictionary:dict keys:vector[string]):any`
+
+Returns the value in a nested dictionary using a sequence of keys.
+
+Returns nil if key not present.
+
+#### member?
+
+`(member? collection:vector/dict value:any):boolean`
+
+Returns true if the given value is a member of the dictionary or vector.
+
+Returns false if otherwise.
+
+### Condition
+
+#### if
+
+`(if test:any then:any else:any):any`
+
+`(if test:any then:any):any`
+
+Evaluates `test`.
+
+If it produces `true`, evaluate `then` and returns the result.
+
+If it produces `false`, evaluate `else` and returns the result, or returns
+`nil` when there are no `else`.
+
+#### unless
+
+`(unless test:any then:any else:any):any`
+
+`(unless test:any then:any):any`
+
+Evaluates `test`.
+
+If it produces `false`, evaluate `then` and returns the result.
+
+If it produces `true`, evaluate `else` and returns the result, or returns
+`nil` when there are no `else`.
+
+### Meta
+
+#### eval
+
+`(eval value:any):any`
+
+Evaluate an expression or definition.
+
 ## Style Guide
 
 * Strictly follow [hlint][hlint] suggestions.

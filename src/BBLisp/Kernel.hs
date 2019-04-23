@@ -46,6 +46,8 @@ pattern (:<|) :: a -> Vector a -> Vector a
 pattern x :<| xs <- (uncons -> Just (x, xs))
 
 -- | Evaluate an expression or definition.
+--
+--   `(eval value:any):any`
 eval :: BSyntax
 eval b [v@BNil]         = Right (b, v)
 eval b [v@(BBoolean _)] = Right (b, v)
@@ -86,8 +88,13 @@ eval _ l = Left $ "Unexpected form " ++ show l
 -- | Evaluates `test`.
 --
 --   If it produces `true`, evaluate `then` and returns the result.
+--
 --   If it produces `false`, evaluate `else` and returns the result, or returns
 --   `nil` when there are no `else`.
+--
+--   `(if test:any then:any else:any):any`
+--
+--   `(if test:any then:any):any`
 if' :: BSyntax
 if' b [test, then', else'] =
     case eval b [test] of
@@ -103,8 +110,13 @@ if' _ (_:_:_:_)     = Left "Too many arguments to if"
 -- | Evaluates `test`.
 --
 --   If it produces `false`, evaluate `then` and returns the result.
+--
 --   If it produces `true`, evaluate `else` and returns the result, or returns
 --   `nil` when there are no `else`.
+--
+--   `(unless test:any then:any else:any):any`
+--
+--   `(unless test:any then:any):any`
 unless' :: BSyntax
 unless' b [test, then', else'] = if' b [test, else', then']
 unless' b [test, then']        = if' b [test, BNil, then']
@@ -115,6 +127,8 @@ unless' _ (_:_:_:_)            = Left "Too many arguments to unless"
 -- | Returns true if all of the arguments are true.
 --
 --   Returns false if otherwise.
+--
+--   `(and values:boolean...):boolean`
 bAnd :: BFunction
 bAnd values
     | not (null values) && all isBoolean values =
@@ -127,6 +141,8 @@ bAnd values
 -- | Returns true if any of the arguments is true.
 --
 --   Returns false if otherwise.
+--
+--   `(or values:boolean...):boolean`
 bOr :: BFunction
 bOr values
     | not (null values) && all isBoolean values =
@@ -137,6 +153,8 @@ bOr values
     isBoolean _            = False
 
 -- | Returns the boolean complement of the argument.
+--
+--   `(not value:boolean):boolean`
 not' :: BFunction
 not' [BBoolean True]  = Right $ BBoolean False
 not' [BBoolean False] = Right $ BBoolean True
@@ -146,12 +164,20 @@ not' _                = Left "Unknown form, expecting `(not boolean)`"
 --   equivalent.
 --
 --   Returns false if otherwise.
+--
+--   `(or values:boolean...):boolean`
 eq :: BFunction
 eq []                   = Left "Too few arguments to ="
 eq [_]                  = Left "Too few arguments to ="
 eq (headValue : others) = Right $ BBoolean $ all (== headValue) others
 
 -- | Returns the sum of the numbers. (+) returns 0.
+--
+--   `(+):integer`
+--
+--   `(+ values:integer...):integer`
+--
+--   `(+ values:integer/decimal...):decimal`
 add :: BFunction
 add [] = Right $ BInteger 0
 add arguments
@@ -171,7 +197,13 @@ add arguments
 
 -- | Subtracts the numbers from the first number.
 --
---   (+) returns 0. (- x) returns the negation of x.
+--   (-) returns 0. (- x) returns the negation of x.
+--
+--   `(-):integer`
+--
+--   `(- values:integer...):integer`
+--
+--   `(- values:integer/decimal...):decimal`
 subtract' :: BFunction
 subtract' [] = Right $ BInteger 0
 subtract' arguments@(number : tailNumbers)
@@ -199,7 +231,13 @@ subtract' arguments@(number : tailNumbers)
 -- | With one argument, returns the string representation of `v`.
 --
 --   With more than one argument, returns the concatenation of the string
---   representations of each element of `vs`.
+--   representations of each element.
+--
+--   `(str):string`
+--
+--   `(str value:any):string`
+--
+--   `(str values:any...):string`
 str :: BFunction
 str []               = Right $ BString Bsc.empty
 str [BBoolean True]  = Right $ BString "true"
@@ -217,6 +255,8 @@ str vs =
     fStrs ls = [ s | BString s <- ls ]
 
 -- | Returns the value mapped to the key. Returns nil if key not present.
+--
+--   `(get dictionary:dict key:string):any`
 get :: BFunction
 get [BDict dictionary, BString key] =
     case Map.lookup key dictionary of
@@ -230,6 +270,8 @@ get arguments
 -- | Returns the value in a nested dictionary using a sequence of keys.
 --
 --   Returns nil if key not present.
+--
+--   `(get-in dictionary:dict keys:vector[string]):any`
 getIn :: BFunction
 getIn [BDict _,              BVector Empty]           = Right BNil
 getIn [dictionary@(BDict _), BVector (key :<| Empty)] = get [dictionary, key]
@@ -244,6 +286,8 @@ getIn arguments
 -- | Returns true if the given value is a member of the dictionary or vector.
 --
 --   Returns false if otherwise.
+--
+--   `(member? collection:vector/dict value:any):boolean`
 bMemberQ :: BFunction
 bMemberQ [BVector vector, value] = Right $ BBoolean $ Vector.elem value vector
 bMemberQ [BDict dict, value]     =
@@ -253,6 +297,8 @@ bMemberQ _ = Left "Unknown form, expecting `(member? dict/vector any)`"
 -- | Returns true if the argument has no items.
 --
 --   Vector, dictionary, list or string are supported.
+--
+--   `(empty? collection:vector/dict/list/string):boolean`
 empty :: BFunction
 empty [BVector vector]
     | Vector.null vector = Right $ BBoolean True
@@ -273,18 +319,24 @@ empty arguments
 -- | All primitives in the module.
 bindings :: BBindings
 bindings = Map.fromList
-    [ ("eval",        BPrimitive $ BSyntax "eval" eval)
-    , ("if",          BPrimitive $ BSyntax "if" if')
-    , ("unless",      BPrimitive $ BSyntax "unless" unless')
-    , ("and",         BPrimitive $ BFunction "and" bAnd)
-    , ("or",          BPrimitive $ BFunction "or" bOr)
+    -- Logical
+    [ ("and",         BPrimitive $ BFunction "and" bAnd)
     , ("not",         BPrimitive $ BFunction "not" not')
+    , ("or",          BPrimitive $ BFunction "or" bOr)
     , ("=",           BPrimitive $ BFunction "=" eq)
+    -- Arithmetic
     , ("+",           BPrimitive $ BFunction "+" add)
     , ("-",           BPrimitive $ BFunction "-" subtract')
+    -- String
     , ("str",         BPrimitive $ BFunction "str" str)
+    -- Collection
+    , ("empty?",      BPrimitive $ BFunction "empty?" empty)
     , ("get",         BPrimitive $ BFunction "get" get)
     , ("get-in",      BPrimitive $ BFunction "get-in" getIn)
     , ("member?",     BPrimitive $ BFunction "member?" bMemberQ)
-    , ("empty?",      BPrimitive $ BFunction "empty?" empty)
+    -- Condition
+    , ("if",          BPrimitive $ BSyntax "if" if')
+    , ("unless",      BPrimitive $ BSyntax "unless" unless')
+    -- Meta
+    , ("eval",        BPrimitive $ BSyntax "eval" eval)
     ]
