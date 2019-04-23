@@ -231,6 +231,8 @@ spec = do
             K.subtract' [BString "42"]
             `shouldBe` Left "Arguments should be integers or decimals"
     describe "str" $ do
+        it "returns empty string for zero arguments" $
+            K.str [] `shouldBe` Right (BString "")
         it "returns the string representation of true" $
             K.str [BBoolean True] `shouldBe` Right (BString "true")
         it "returns the string representation of false" $
@@ -249,10 +251,27 @@ spec = do
             K.str [K.bindings ! "eval"] `shouldBe` Right (BString "eval")
         it "returns the string representation of function" $
             K.str [K.bindings ! "str"] `shouldBe` Right (BString "str")
+        it "returns the string representation of list" $
+            K.str [BList [K.bindings ! "str", BInteger 33]]
+                `shouldBe` Right (BString "'(str 33)")
+        it "returns the string representation of empty list" $
+            K.str [BList []] `shouldBe` Right (BString "'()")
+        it "returns the string representation of dictionary" $
+            K.str
+                [ BDict $ Map.fromList
+                    [("one", BInteger 1), ("two", BInteger 2)]
+                ]
+                `shouldBe` Right (BString "{one 1 two 2}")
+        it "returns the string representation of empty dictionary" $
+            K.str [BDict mempty] `shouldBe` Right (BString "{}")
+        it "returns the string representation of vector" $
+            K.str [BVector $ Vector.fromList [BInteger 0, BBoolean False]]
+                `shouldBe` Right (BString "[0 false]")
+        it "returns the string representation of empty vector" $
+            K.str [BVector mempty] `shouldBe` Right (BString "[]")
         it "returns the concatenation of the string representations" $
-            K.str strTestList `shouldBe` Right (BString "1world.")
-        it "returns empty string for zero arguments" $
-            K.str [] `shouldBe` Right (BString "")
+            K.str [BInteger 1, BSymbol "world", BString "."]
+                `shouldBe` Right (BString "1world.")
     describe "if'" $ do
         it "evaluates and returns then when test is evaluated to true" $
             snd <$> ifTest (BBoolean True) `shouldBe` Right (BString "42")
@@ -460,7 +479,6 @@ spec = do
         ]
     testVector    = BVector $ Vector.fromList
         [BInteger 1, BInteger 1, BInteger 2, BInteger 3, BInteger 5]
-    strTestList   = [BInteger 1, BSymbol "world", BString "."]
     ifTest test   = K.if' K.bindings
         [ test
         , BList [BSymbol "str", BInteger 42]

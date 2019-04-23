@@ -22,8 +22,10 @@ module BBLisp.Kernel
     , bindings
     ) where
 
-import qualified Data.ByteString as Bs
+import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Char8 as Bsc
+import qualified Data.ByteString.Lazy as Lbs
+import Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
@@ -239,20 +241,42 @@ subtract' arguments@(number : tailNumbers)
 --
 --   `(str values:any...):string`
 str :: BFunction
-str []               = Right $ BString Bsc.empty
-str [BBoolean True]  = Right $ BString "true"
-str [BBoolean False] = Right $ BString "false"
-str [BInteger v]     = Right $ BString $ Bsc.pack $ show v
-str [BDecimal v]     = Right $ BString $ Bsc.pack $ show v
-str [s@(BString _)]  = Right s
-str [BSymbol v]      = Right $ BString v
-str [BNil]           = Right $ BString Bsc.empty
-str [BPrimitive (BSyntax   name _)] = Right $ BString name
-str [BPrimitive (BFunction name _)] = Right $ BString name
-str vs =
-    BString . Bs.concat . fStrs <$> mapM (str . (:[])) vs
+str []      = Right $ BString Bsc.empty
+str [value] = Right $ BString $ Lbs.toStrict $ Builder.toLazyByteString $
+    str' value
+str values  = Right $ BString $ Lbs.toStrict $ Builder.toLazyByteString $
+    mconcat $ map str' values
+
+-- | Returns the string representation of the argument.
+str' :: BList -> Builder.Builder
+str' (BBoolean True)  = Builder.byteString "true"
+str' (BBoolean False) = Builder.byteString "false"
+str' (BInteger v)     = Builder.string8 $ show v
+str' (BDecimal v)     = Builder.string8 $ show v
+str' (BString v)      = Builder.byteString v
+str' (BSymbol v)      = Builder.byteString v
+str' BNil             = mempty
+str' (BPrimitive (BSyntax   name _)) = Builder.byteString name
+str' (BPrimitive (BFunction name _)) = Builder.byteString name
+str' (BList vs)   = mconcat
+    [ Builder.byteString "'("
+    , mconcat $ intersperse (Builder.byteString " ") $ map str' vs
+    , Builder.byteString ")"
+    ]
+str' (BDict dict) = mconcat
+    [ Builder.byteString "{"
+    , mconcat $ intersperse (Builder.byteString " ") $
+        map elemStr $ Map.toAscList dict
+    , Builder.byteString "}"
+    ]
   where
-    fStrs ls = [ s | BString s <- ls ]
+    elemStr (k, v) = Builder.byteString k <> Builder.byteString " " <> str' v
+str' (BVector vs) = mconcat
+    [ Builder.byteString "["
+    , mconcat $ intersperse (Builder.byteString " ") $
+        map str' $ Vector.toList vs
+    , Builder.byteString "]"
+    ]
 
 -- | Returns the value mapped to the key. Returns nil if key not present.
 --
