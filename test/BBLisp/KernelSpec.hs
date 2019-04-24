@@ -253,9 +253,9 @@ spec = do
             K.str [K.bindings ! "str"] `shouldBe` Right (BString "str")
         it "returns the string representation of list" $
             K.str [BList [K.bindings ! "str", BInteger 33]]
-                `shouldBe` Right (BString "'(str 33)")
+                `shouldBe` Right (BString "(str 33)")
         it "returns the string representation of empty list" $
-            K.str [BList []] `shouldBe` Right (BString "'()")
+            K.str [BList []] `shouldBe` Right (BString "()")
         it "returns the string representation of dictionary" $
             K.str
                 [ BDict $ Map.fromList

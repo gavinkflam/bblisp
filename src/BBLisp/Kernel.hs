@@ -25,6 +25,7 @@ module BBLisp.Kernel
 import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Char8 as Bsc
 import qualified Data.ByteString.Lazy as Lbs
+import Data.Foldable (foldMap)
 import Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import Data.Vector (Vector)
@@ -245,7 +246,7 @@ str []      = Right $ BString Bsc.empty
 str [value] = Right $ BString $ Lbs.toStrict $ Builder.toLazyByteString $
     str' value
 str values  = Right $ BString $ Lbs.toStrict $ Builder.toLazyByteString $
-    mconcat $ map str' values
+    foldMap str' values
 
 -- | Returns the string representation of the argument.
 str' :: BList -> Builder.Builder
@@ -259,23 +260,23 @@ str' BNil             = mempty
 str' (BPrimitive (BSyntax   name _)) = Builder.byteString name
 str' (BPrimitive (BFunction name _)) = Builder.byteString name
 str' (BList vs)   = mconcat
-    [ Builder.byteString "'("
-    , mconcat $ intersperse (Builder.byteString " ") $ map str' vs
-    , Builder.byteString ")"
+    [ Builder.char8 '('
+    , mconcat $ intersperse (Builder.char8 ' ') $ map str' vs
+    , Builder.char8 ')'
     ]
 str' (BDict dict) = mconcat
-    [ Builder.byteString "{"
-    , mconcat $ intersperse (Builder.byteString " ") $
+    [ Builder.char8 '{'
+    , mconcat $ intersperse (Builder.char8 ' ') $
         map elemStr $ Map.toAscList dict
-    , Builder.byteString "}"
+    , Builder.char8 '}'
     ]
   where
-    elemStr (k, v) = Builder.byteString k <> Builder.byteString " " <> str' v
+    elemStr (k, v) = Builder.byteString k <> Builder.char8 ' ' <> str' v
 str' (BVector vs) = mconcat
-    [ Builder.byteString "["
-    , mconcat $ intersperse (Builder.byteString " ") $
+    [ Builder.char8 '['
+    , mconcat $ intersperse (Builder.char8 ' ') $
         map str' $ Vector.toList vs
-    , Builder.byteString "]"
+    , Builder.char8 ']'
     ]
 
 -- | Returns the value mapped to the key. Returns nil if key not present.
