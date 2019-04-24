@@ -279,12 +279,20 @@ str' (BVector vs) = mconcat
     , Builder.char8 ']'
     ]
 
--- | Returns the value mapped to the key. Returns nil if key not present.
+-- | Returns the value mapped to the key or index.
+--
+--   Returns nil if the key or index is not present.
 --
 --   `(get dictionary:dict key:string):any`
+--
+--   `(get vector:vector index:integer):any`
 get :: BFunction
 get [BDict dictionary, BString key] =
     case Map.lookup key dictionary of
+        Nothing  -> Right BNil
+        Just val -> Right val
+get [BVector vector, BInteger index] =
+    case vector Vector.!? fromIntegral index of
         Nothing  -> Right BNil
         Just val -> Right val
 get [_, _] = Right BNil
@@ -292,16 +300,23 @@ get arguments
     | length (take 3 arguments) > 2 = Left "Too many arguments to get"
     | otherwise                     = Left "Too few arguments to get"
 
--- | Returns the value in a nested dictionary using a sequence of keys.
+-- | Returns the value in a nested associative structure using a sequence of
+--   keys or indexes.
 --
---   Returns nil if key not present.
+--   Returns nil if the key or index is not present.
 --
---   `(get-in dictionary:dict keys:vector[string]):any`
+--   `(get-in dictionary:dict keys:vector[string/integer]):any`
+--
+--   `(get-in vector:vector keys:vector[string/integer]):any`
 getIn :: BFunction
-getIn [BDict _,              BVector Empty]           = Right BNil
-getIn [dictionary@(BDict _), BVector (key :<| Empty)] = get [dictionary, key]
-getIn [dictionary@(BDict _), BVector (key :<| tailKeys)]  =
+getIn [BDict _,              BVector Empty]              = Right BNil
+getIn [dictionary@(BDict _), BVector (key :<| Empty)]    = get [dictionary, key]
+getIn [dictionary@(BDict _), BVector (key :<| tailKeys)] =
     (\v -> getIn [v, BVector tailKeys]) =<< get [dictionary, key]
+getIn [BVector _,            BVector Empty]              = Right BNil
+getIn [vector@(BVector _),   BVector (key :<| Empty)]    = get [vector, key]
+getIn [vector@(BVector _),   BVector (key :<| tailKeys)] =
+    (\v -> getIn [v, BVector tailKeys]) =<< get [vector, key]
 getIn [_, BVector _] = Right BNil
 getIn [_, _]         = Left "Keys should be vector"
 getIn arguments

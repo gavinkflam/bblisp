@@ -114,15 +114,22 @@ Vector, dictionary, list or string are supported.
 
 `(get dictionary:dict key:string):any`
 
-Returns the value mapped to the key. Returns nil if key not present.
+`(get vector:vector index:integer):any`
+
+Returns the value mapped to the key or index.
+
+Returns nil if the key or index is not present.
 
 #### get-in
 
-`(get-in dictionary:dict keys:vector[string]):any`
+`(get-in dictionary:dict keys:vector[string/integer]):any`
 
-Returns the value in a nested dictionary using a sequence of keys.
+`(get-in vector:vector keys:vector[string/integer]):any`
 
-Returns nil if key not present.
+Returns the value in a nested associative structure using a sequence of
+keys or indexes.
+
+Returns nil if the key or index is not present.
 
 #### member?
 

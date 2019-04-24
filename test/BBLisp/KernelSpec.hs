@@ -345,16 +345,22 @@ spec = do
             K.bOr [BInteger 1] `shouldBe`
                 Left "Unknown form, expecting `(or boolean...)`"
     describe "get" $ do
-        it "returns the value mapped to the key" $
+        it "returns the value mapped to the key for dictionary" $
             K.get [testDict, BString "foo"] `shouldBe` Right (BInteger 42)
-        it "returns nil for key not present" $
+        it "returns nil for key not present for dictionary" $
             K.get [testDict, BString "bar"] `shouldBe` Right BNil
+        it "returns the value mapped to the key for vector" $
+            K.get [testVector, BInteger 4] `shouldBe` Right (BInteger 5)
+        it "returns nil for key not present for vector" $
+            K.get [testVector, BInteger 10] `shouldBe` Right BNil
         it "returns error for too few arguments" $
             K.get [testDict] `shouldBe` Left "Too few arguments to get"
         it "returns nil for incorrect data type for dictionary" $
             K.get [BNil, BString "foo"] `shouldBe` Right BNil
-        it "returns nil for incorrect data type for key" $
+        it "returns nil for incorrect data type of key for dictionary" $
             K.get [testDict, BSymbol "foo"] `shouldBe` Right BNil
+        it "returns nil for incorrect data type of key for vector" $
+            K.get [testVector, BSymbol "foo"] `shouldBe` Right BNil
         it "returns error for too many arguments" $
             K.get [testDict, BString "bar", BString "lorem"]
             `shouldBe` Left "Too many arguments to get"
@@ -362,6 +368,9 @@ spec = do
         it "returns the value in the first level of the dictionary" $
             K.getIn [testDict , BVector $ Vector.fromList [BString "foo"]]
             `shouldBe` Right (BInteger 42)
+        it "returns the value in the first level of the vector" $
+            K.getIn [testVector, BVector $ Vector.fromList [BInteger 4]]
+                `shouldBe` Right (BInteger 5)
         it "returns the value in the second level of the dictionary" $
             K.getIn
                 [ testDict
@@ -371,7 +380,13 @@ spec = do
                     ]
                 ]
                 `shouldBe` Right (BString "amet")
-        it "returns nil for key not present in the second level" $
+        it "returns the value in the second level of the vector" $
+            K.getIn
+                [ testVector
+                , BVector $ Vector.fromList [BInteger 5, BInteger 1]
+                ]
+                `shouldBe` Right (BInteger 55)
+        it "returns nil for key not present in the second level of the dictionary" $
             K.getIn
                 [ testDict
                 , BVector $ Vector.fromList
@@ -380,7 +395,16 @@ spec = do
                     ]
                 ]
                 `shouldBe` Right BNil
-        it "returns nil for key not present in the first level" $
+        it "returns nil for key not present in the second level of the vector" $
+            K.getIn
+                [ testVector
+                , BVector $ Vector.fromList
+                    [ BInteger 5
+                    , BInteger 4
+                    ]
+                ]
+                `shouldBe` Right BNil
+        it "returns nil for key not present in the first level of the dictionary" $
             K.getIn
                 [ testDict
                 , BVector $ Vector.fromList
@@ -388,7 +412,10 @@ spec = do
                     ]
                 ]
                 `shouldBe` Right BNil
-        it "returns nil for key not present in the first and second level" $
+        it "returns nil for key not present in the first level of the vector" $
+            K.getIn [testVector, BVector $ Vector.fromList [BInteger 6]]
+                `shouldBe` Right BNil
+        it "returns nil for key not present in the first and second level of the dictionary" $
             K.getIn
                 [ testDict
                 , BVector $ Vector.fromList
@@ -397,12 +424,30 @@ spec = do
                     ]
                 ]
                 `shouldBe` Right BNil
+        it "returns nil for key not present in the first and second level of the vector" $
+            K.getIn
+                [ testVector
+                , BVector $ Vector.fromList
+                    [ BInteger 10
+                    , BInteger 20
+                    ]
+                ]
+                `shouldBe` Right BNil
         it "returns nil for incorrect data type for dictionary" $
             K.getIn [BNil, BVector $ Vector.fromList [BString "foo"]]
             `shouldBe` Right BNil
-        it "returns nil for incorrect data type for key" $
+        it "returns nil for incorrect data type of key for dictionary" $
             K.getIn
                 [ testDict
+                , BVector $ Vector.fromList
+                    [ BSymbol "lorem"
+                    , BSymbol "consectetur"
+                    ]
+                ]
+                `shouldBe` Right BNil
+        it "returns nil for incorrect data type of key for dictionary" $
+            K.getIn
+                [ testVector
                 , BVector $ Vector.fromList
                     [ BSymbol "lorem"
                     , BSymbol "consectetur"
@@ -478,7 +523,17 @@ spec = do
             )
         ]
     testVector    = BVector $ Vector.fromList
-        [BInteger 1, BInteger 1, BInteger 2, BInteger 3, BInteger 5]
+        [ BInteger 1
+        , BInteger 1
+        , BInteger 2
+        , BInteger 3
+        , BInteger 5
+        , BVector $ Vector.fromList
+            [ BInteger 33
+            , BInteger 55
+            , BInteger 77
+            ]
+        ]
     ifTest test   = K.if' K.bindings
         [ test
         , BList [BSymbol "str", BInteger 42]
